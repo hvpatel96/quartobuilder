@@ -1,10 +1,16 @@
-export type BlockType = 'text' | 'code' | 'image' | 'html';
+export type BlockType = 'text' | 'code' | 'image' | 'html' | 'layout';
 
 export interface ReportMetadata {
     title: string;
     author: string;
     date: string;
     format: 'html' | 'pdf' | 'docx';
+}
+
+export interface ReportColumn {
+    id: string;
+    width?: number; // percentage (e.g., 50)
+    blocks: ReportBlock[];
 }
 
 export interface ReportBlock {
@@ -16,4 +22,5 @@ export interface ReportBlock {
         caption?: string; // For images
         [key: string]: any;
     };
+    columns?: ReportColumn[]; // For layout blocks
 }

@@ -17,37 +17,52 @@ export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetada
     const imageFolder = zip.folder("images");
     let qmdContent = generateYAML(metadata);
 
-    for (const block of blocks) {
-        if (block.type === 'text') {
-            qmdContent += `\n${block.content}\n`;
-        } else if (block.type === 'code') {
-            qmdContent += `\n\`\`\`{${block.language || 'r'}}\n${block.content}\n\`\`\`\n`;
-        } else if (block.type === 'image' && block.content) {
-            // Check if it's a data URL
-            if (block.content.startsWith('data:image')) {
-                const matches = block.content.match(/^data:image\/([a-zA-Z+]*);base64,([^"]*)$/);
-                if (matches) {
-                    const ext = matches[1].replace('+', '');
-                    const safeExt = ext === 'jpeg' ? 'jpg' : ext;
-                    const data = matches[2];
-                    const filename = `image-${block.id}.${safeExt}`;
+    // Recursive function to process blocks
+    const processBlocks = (blockList: ReportBlock[]): string => {
+        let content = "";
+        for (const block of blockList) {
+            if (block.type === 'text') {
+                content += `\n${block.content}\n`;
+            } else if (block.type === 'code') {
+                content += `\n\`\`\`{${block.language || 'r'}}\n${block.content}\n\`\`\`\n`;
+            } else if (block.type === 'image' && block.content) {
+                // Check if it's a data URL
+                if (block.content.startsWith('data:image')) {
+                    const matches = block.content.match(/^data:image\/([a-zA-Z+]*);base64,([^"]*)$/);
+                    if (matches) {
+                        const ext = matches[1].replace('+', '');
+                        const safeExt = ext === 'jpeg' ? 'jpg' : ext;
+                        const data = matches[2];
+                        const filename = `image-${block.id}.${safeExt}`;
 
-                    if (imageFolder) {
-                        imageFolder.file(filename, data, { base64: true });
+                        if (imageFolder) {
+                            imageFolder.file(filename, data, { base64: true });
+                        }
+
+                        const caption = block.metadata?.caption ? `"${block.metadata.caption}"` : '';
+                        content += `\n![${caption}](images/${filename})\n`;
                     }
-
+                } else {
+                    // If it's a normal URL
                     const caption = block.metadata?.caption ? `"${block.metadata.caption}"` : '';
-                    qmdContent += `\n![${caption}](images/${filename})\n`;
+                    content += `\n![${caption}](${block.content})\n`;
                 }
-            } else {
-                // If it's a normal URL
-                const caption = block.metadata?.caption ? `"${block.metadata.caption}"` : '';
-                qmdContent += `\n![${caption}](${block.content})\n`;
+            } else if (block.type === 'html') {
+                content += `\n\`\`\`{=html}\n${block.content}\n\`\`\`\n`;
+            } else if (block.type === 'layout' && block.columns) {
+                content += `\n::::: {.columns}\n`;
+                for (const col of block.columns) {
+                    content += `\n::: {.column width="${col.width}%"}\n`;
+                    content += processBlocks(col.blocks);
+                    content += `\n:::\n`;
+                }
+                content += `\n:::::\n`;
             }
-        } else if (block.type === 'html') {
-            qmdContent += `\n\`\`\`{=html}\n${block.content}\n\`\`\`\n`;
         }
-    }
+        return content;
+    };
+
+    qmdContent += processBlocks(blocks);
 
     zip.file("report.qmd", qmdContent);
 
