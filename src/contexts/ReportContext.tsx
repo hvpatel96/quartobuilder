@@ -9,6 +9,7 @@ interface ReportContextType {
     updateBlock: (id: string, updates: Partial<ReportBlock>) => void;
     removeBlock: (id: string) => void;
     moveBlock: (id: string, direction: 'up' | 'down') => void;
+    updateBlockOrder: (newBlocks: ReportBlock[]) => void;
     updateMetadata: (updates: Partial<ReportMetadata>) => void;
 }
 
@@ -177,12 +178,16 @@ export const ReportProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
+    const updateBlockOrder = (newBlocks: ReportBlock[]) => {
+        setBlocks(newBlocks);
+    };
+
     const updateMetadata = (updates: Partial<ReportMetadata>) => {
         setMetadata(prev => ({ ...prev, ...updates }));
     };
 
     return (
-        <ReportContext.Provider value={{ blocks, metadata, addBlock, updateBlock, removeBlock, moveBlock, updateMetadata }}>
+        <ReportContext.Provider value={{ blocks, metadata, addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder, updateMetadata }}>
             {children}
         </ReportContext.Provider>
     );

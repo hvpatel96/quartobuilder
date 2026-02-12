@@ -27,6 +27,7 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
                     onDelete={removeBlock}
                     onMoveUp={() => moveBlock(block.id, 'up')}
                     onMoveDown={() => moveBlock(block.id, 'down')}
+                    inColumn={!!columnId}
                 >
                     {block.type === 'text' && (
                         <TextBlock
@@ -63,13 +64,17 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
             ))}
 
             {/* Add Block Controls */}
-            <div className="flex flex-wrap items-center justify-center gap-2 py-4 opacity-50 hover:opacity-100 transition-opacity border-t border-dashed border-gray-200 dark:border-gray-800">
-                <AddButton onClick={() => addBlock('text', parentId, columnId)} icon={<Type className="w-4 h-4" />} label="Text" />
-                <AddButton onClick={() => addBlock('code', parentId, columnId)} icon={<Code className="w-4 h-4" />} label="Code" />
-                <AddButton onClick={() => addBlock('image', parentId, columnId)} icon={<ImageIcon className="w-4 h-4" />} label="Image" />
-                <AddButton onClick={() => addBlock('html', parentId, columnId)} icon={<div className="font-mono text-[10px] font-bold">&lt;/&gt;</div>} label="HTML" />
-                <AddButton onClick={() => addBlock('layout', parentId, columnId)} icon={<Columns className="w-4 h-4" />} label="Columns" />
-            </div>
+            {(!columnId || blocks.length === 0) && (
+                <div className="flex flex-wrap items-center justify-center gap-2 py-4 opacity-50 hover:opacity-100 transition-opacity border-t border-dashed border-gray-200 dark:border-gray-800">
+                    <AddButton onClick={() => addBlock('text', parentId, columnId)} icon={<Type className="w-4 h-4" />} label="Text" />
+                    <AddButton onClick={() => addBlock('code', parentId, columnId)} icon={<Code className="w-4 h-4" />} label="Code" />
+                    <AddButton onClick={() => addBlock('image', parentId, columnId)} icon={<ImageIcon className="w-4 h-4" />} label="Image" />
+                    <AddButton onClick={() => addBlock('html', parentId, columnId)} icon={<div className="font-mono text-[10px] font-bold">&lt;/&gt;</div>} label="HTML" />
+                    {!columnId && (
+                        <AddButton onClick={() => addBlock('layout', parentId, columnId)} icon={<Columns className="w-4 h-4" />} label="Columns" />
+                    )}
+                </div>
+            )}
         </div>
     );
 };
