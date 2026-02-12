@@ -107,7 +107,10 @@ export const MainLayout = ({ children, onExport, onToggleMetadata }: MainLayoutP
                 </header>
 
                 {/* Scrollable Canvas area */}
-                <div className="flex-1 overflow-hidden bg-gray-50 dark:bg-gray-950 p-4 md:p-6 scroll-smooth">
+                <div className={cn(
+                    "flex-1 bg-gray-50 dark:bg-gray-950 p-4 md:p-6 scroll-smooth",
+                    viewMode === 'split' ? "overflow-hidden" : "overflow-y-auto"
+                )}>
                     {children}
                 </div>
             </main>

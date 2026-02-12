@@ -5,9 +5,10 @@ import { CodeBlock } from './CodeBlock';
 import { ImageBlock } from './ImageBlock';
 import { HtmlBlock } from './HtmlBlock';
 import { LayoutBlock } from './LayoutBlock';
+import { PageBreakBlock } from './PageBreakBlock';
 import { useReport } from '../../contexts/ReportContext';
 import type { ReportBlock } from '../../types';
-import { Type, Code, Image as ImageIcon, Columns } from 'lucide-react';
+import { Type, Code, Image as ImageIcon, Columns, Scissors } from 'lucide-react';
 
 interface BlockListProps {
     blocks: ReportBlock[];
@@ -17,6 +18,14 @@ interface BlockListProps {
 
 export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
     const { addBlock, updateBlock, removeBlock, moveBlock } = useReport();
+
+    // Helper to render AddButton 
+    const AddButton = ({ onClick, icon, label }: { onClick: () => void, icon: React.ReactNode, label: string }) => (
+        <button onClick={onClick} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 text-xs font-medium border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+            {icon}
+            <span>{label}</span>
+        </button>
+    );
 
     return (
         <div className="space-y-4">
@@ -60,6 +69,9 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
                     {block.type === 'layout' && (
                         <LayoutBlock block={block} />
                     )}
+                    {block.type === 'pagebreak' && (
+                        <PageBreakBlock />
+                    )}
                 </Block>
             ))}
 
@@ -71,17 +83,13 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
                     <AddButton onClick={() => addBlock('image', parentId, columnId)} icon={<ImageIcon className="w-4 h-4" />} label="Image" />
                     <AddButton onClick={() => addBlock('html', parentId, columnId)} icon={<div className="font-mono text-[10px] font-bold">&lt;/&gt;</div>} label="HTML" />
                     {!columnId && (
-                        <AddButton onClick={() => addBlock('layout', parentId, columnId)} icon={<Columns className="w-4 h-4" />} label="Columns" />
+                        <>
+                            <AddButton onClick={() => addBlock('layout', parentId, columnId)} icon={<Columns className="w-4 h-4" />} label="Columns" />
+                            <AddButton onClick={() => addBlock('pagebreak', parentId, columnId)} icon={<Scissors className="w-4 h-4" />} label="Page Break" />
+                        </>
                     )}
                 </div>
             )}
         </div>
     );
 };
-
-const AddButton = ({ onClick, icon, label }: { onClick: () => void, icon: React.ReactNode, label: string }) => (
-    <button onClick={onClick} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 text-xs font-medium border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
-        {icon}
-        <span>{label}</span>
-    </button>
-);

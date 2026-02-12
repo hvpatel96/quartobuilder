@@ -49,6 +49,8 @@ export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetada
                 }
             } else if (block.type === 'html') {
                 content += `\n\`\`\`{=html}\n${block.content}\n\`\`\`\n`;
+            } else if (block.type === 'pagebreak') {
+                content += '\n{{< pagebreak >}}\n';
             } else if (block.type === 'layout' && block.columns) {
                 content += `\n::::: {.columns}\n`;
                 for (const col of block.columns) {

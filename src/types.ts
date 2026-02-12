@@ -1,4 +1,4 @@
-export type BlockType = 'text' | 'code' | 'image' | 'html' | 'layout';
+export type BlockType = 'text' | 'code' | 'image' | 'html' | 'layout' | 'pagebreak';
 
 export interface ReportMetadata {
     title: string;

@@ -21,6 +21,14 @@ export const PreviewBlock = ({ block }: PreviewBlockProps) => {
             return <PreviewHtml content={block.content} />;
         case 'layout':
             return <PreviewLayout block={block} />;
+        case 'pagebreak':
+            return (
+                <div className="py-8 flex items-center gap-4 text-gray-300 dark:text-gray-700 select-none">
+                    <div className="h-px bg-current flex-1" />
+                    <span className="text-xs font-mono uppercase tracking-widest">Page Break</span>
+                    <div className="h-px bg-current flex-1" />
+                </div>
+            );
         default:
             return null;
     }
