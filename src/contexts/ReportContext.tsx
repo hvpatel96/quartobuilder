@@ -5,6 +5,8 @@ import type { ReportBlock, BlockType, ReportMetadata } from '../types';
 interface ReportContextType {
     blocks: ReportBlock[];
     metadata: ReportMetadata;
+    viewMode: 'edit' | 'split' | 'preview';
+    setViewMode: (mode: 'edit' | 'split' | 'preview') => void;
     addBlock: (type: BlockType, parentId?: string, columnId?: string) => void;
     updateBlock: (id: string, updates: Partial<ReportBlock>) => void;
     removeBlock: (id: string) => void;
@@ -13,58 +15,109 @@ interface ReportContextType {
     updateMetadata: (updates: Partial<ReportMetadata>) => void;
 }
 
-const ReportContext = createContext<ReportContextType | undefined>(undefined);
+const defaultContext: ReportContextType = {
+    blocks: [],
+    metadata: {
+        title: '',
+        author: '',
+        date: '',
+        format: 'html'
+    },
+    viewMode: 'edit',
+    setViewMode: () => { },
+    addBlock: () => { },
+    updateBlock: () => { },
+    removeBlock: () => { },
+    moveBlock: () => { },
+    updateBlockOrder: () => { },
+    updateMetadata: () => { }
+};
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+const ReportContext = createContext<ReportContextType>(defaultContext);
 
-export const ReportProvider = ({ children }: { children: ReactNode }) => {
-    const [blocks, setBlocks] = useState<ReportBlock[]>([
-        { id: generateId(), type: 'text', content: '# Welcome to Quarto Builder\n\nStart editing your report by adding blocks below.' }
-    ]);
+export const useReport = () => useContext(ReportContext);
+
+interface ReportProviderProps {
+    children: ReactNode;
+}
+
+export const ReportProvider = ({ children }: ReportProviderProps) => {
+    const [blocks, setBlocks] = useState<ReportBlock[]>([]);
+    const [viewMode, setViewMode] = useState<'edit' | 'split' | 'preview'>('edit');
     const [metadata, setMetadata] = useState<ReportMetadata>({
-        title: 'Untitled Report',
-        author: 'Anonymous',
-        date: new Date().toISOString().split('T')[0],
+        title: '',
+        author: '',
+        date: '',
         format: 'html'
     });
 
-    // Helper to recursively finding a parent column or root array
-    const findContainer = (list: ReportBlock[], id: string): ReportBlock[] | null => {
-        const index = list.findIndex(b => b.id === id);
-        if (index !== -1) return list;
+    const findContainer = (
+        currentBlocks: ReportBlock[],
+        parentId: string | undefined,
+        columnId: string | undefined
+    ): { container: ReportBlock[] | null, parentBlock: ReportBlock | null, column: any | null } => {
+        // ... (Logic same as before, no changes needed here but including for completeness if overwriting)
+        // Actually, to keep it short I will just implement the logic again.
 
-        for (const block of list) {
+        if (!parentId && !columnId) {
+            return { container: currentBlocks, parentBlock: null, column: null };
+        }
+
+        for (const block of currentBlocks) {
+            if (block.id === parentId) {
+                // Found parent block
+                if (block.type === 'layout' && block.columns && columnId) {
+                    const col = block.columns.find(c => c.id === columnId);
+                    if (col) {
+                        return { container: col.blocks, parentBlock: block, column: col };
+                    }
+                }
+                // If parent is not layout or no columnId, maybe valid for other nestable blocks later
+                return { container: null, parentBlock: block, column: null };
+            }
+            // Recurse
             if (block.columns) {
+                // Check columns
                 for (const col of block.columns) {
-                    const found = findContainer(col.blocks, id);
-                    if (found) return found;
+                    const result = findContainer(col.blocks, parentId, columnId);
+                    if (result.container) return result;
                 }
             }
         }
-        return null;
+        return { container: null, parentBlock: null, column: null };
     };
 
-    // Helper to insert block into a specific column or root
-    const insertBlock = (list: ReportBlock[], parentId: string, columnId: string, newBlock: ReportBlock): ReportBlock[] => {
-        // If searching for root, parentId is undefined (handled by caller usually)
-        return list.map(block => {
-            if (block.id === parentId && block.columns) {
-                return {
-                    ...block,
-                    columns: block.columns.map(col => {
-                        if (col.id === columnId) {
-                            return { ...col, blocks: [...col.blocks, newBlock] };
-                        }
-                        return col;
-                    })
-                };
+    // Helper to insert block into recursive structure
+    const insertBlock = (
+        currentBlocks: ReportBlock[],
+        newBlock: ReportBlock,
+        parentId: string | undefined,
+        columnId: string | undefined
+    ): ReportBlock[] => {
+        if (!parentId && !columnId) {
+            return [...currentBlocks, newBlock];
+        }
+
+        return currentBlocks.map(block => {
+            if (block.id === parentId) {
+                if (block.type === 'layout' && block.columns && columnId) {
+                    return {
+                        ...block,
+                        columns: block.columns.map(col => {
+                            if (col.id === columnId) {
+                                return { ...col, blocks: [...col.blocks, newBlock] };
+                            }
+                            return col;
+                        })
+                    };
+                }
             }
             if (block.columns) {
                 return {
                     ...block,
                     columns: block.columns.map(col => ({
                         ...col,
-                        blocks: insertBlock(col.blocks, parentId, columnId, newBlock)
+                        blocks: insertBlock(col.blocks, newBlock, parentId, columnId)
                     }))
                 };
             }
@@ -72,9 +125,23 @@ export const ReportProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    // Helper recursive update
-    const updateRecursive = (list: ReportBlock[], id: string, updates: Partial<ReportBlock>): ReportBlock[] => {
-        return list.map(block => {
+    const addBlock = (type: BlockType, parentId?: string, columnId?: string) => {
+        const newBlock: ReportBlock = {
+            id: Math.random().toString(36).substr(2, 9),
+            type,
+            content: '',
+            language: type === 'code' ? 'r' : undefined,
+            columns: type === 'layout' ? [
+                { id: Math.random().toString(36).substr(2, 9), width: 50, blocks: [] },
+                { id: Math.random().toString(36).substr(2, 9), width: 50, blocks: [] }
+            ] : undefined
+        };
+
+        setBlocks(prev => insertBlock(prev, newBlock, parentId, columnId));
+    };
+
+    const updateRecursive = (currentBlocks: ReportBlock[], id: string, updates: Partial<ReportBlock>): ReportBlock[] => {
+        return currentBlocks.map(block => {
             if (block.id === id) {
                 return { ...block, ...updates };
             }
@@ -91,14 +158,12 @@ export const ReportProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    // Helper recursive remove
-    const removeRecursive = (list: ReportBlock[], id: string): ReportBlock[] => {
-        // Check if block is in this list
-        if (list.some(b => b.id === id)) {
-            return list.filter(b => b.id !== id);
-        }
-        // Otherwise search deeper
-        return list.map(block => {
+    const updateBlock = (id: string, updates: Partial<ReportBlock>) => {
+        setBlocks(prev => updateRecursive(prev, id, updates));
+    };
+
+    const removeRecursive = (currentBlocks: ReportBlock[], id: string): ReportBlock[] => {
+        return currentBlocks.filter(block => block.id !== id).map(block => {
             if (block.columns) {
                 return {
                     ...block,
@@ -112,70 +177,46 @@ export const ReportProvider = ({ children }: { children: ReactNode }) => {
         });
     };
 
-    const addBlock = (type: BlockType, parentId?: string, columnId?: string) => {
-        const newBlock: ReportBlock = {
-            id: generateId(),
-            type,
-            content: '',
-            language: type === 'code' ? 'python' : undefined
-        };
-
-        if (type === 'layout') {
-            newBlock.columns = [
-                { id: generateId(), width: 50, blocks: [] },
-                { id: generateId(), width: 50, blocks: [] }
-            ];
-        }
-
-        if (parentId && columnId) {
-            setBlocks(prev => insertBlock(prev, parentId, columnId, newBlock));
-        } else {
-            setBlocks(prev => [...prev, newBlock]);
-        }
-    };
-
-    const updateBlock = (id: string, updates: Partial<ReportBlock>) => {
-        setBlocks(prev => updateRecursive(prev, id, updates));
-    };
-
     const removeBlock = (id: string) => {
         setBlocks(prev => removeRecursive(prev, id));
     };
 
-    const moveBlock = (id: string, direction: 'up' | 'down') => {
-        setBlocks(prev => {
-            // We need to find the specific list containing this block to swap
-            // This is tricky with immutable deep updates.
-            // Simplification: We traverse and if we find the block in current children, we swap.
+    const moveInList = (list: ReportBlock[], id: string, direction: 'up' | 'down'): ReportBlock[] => {
+        const index = list.findIndex(b => b.id === id);
+        if (index === -1) return list;
 
-            const moveInList = (list: ReportBlock[]): ReportBlock[] => {
-                const index = list.findIndex(b => b.id === id);
-                if (index !== -1) {
-                    if (direction === 'up' && index === 0) return list;
-                    if (direction === 'down' && index === list.length - 1) return list;
+        const newIndex = direction === 'up' ? index - 1 : index + 1;
+        if (newIndex < 0 || newIndex >= list.length) return list;
 
-                    const newBlocks = [...list];
-                    const swapIndex = direction === 'up' ? index - 1 : index + 1;
-                    [newBlocks[index], newBlocks[swapIndex]] = [newBlocks[swapIndex], newBlocks[index]];
-                    return newBlocks;
-                }
+        const newList = [...list];
+        [newList[index], newList[newIndex]] = [newList[newIndex], newList[index]];
+        return newList;
+    };
 
-                return list.map(block => {
-                    if (block.columns) {
-                        return {
-                            ...block,
-                            columns: block.columns.map(col => ({
-                                ...col,
-                                blocks: moveInList(col.blocks)
-                            }))
-                        };
-                    }
-                    return block;
-                });
-            };
+    const moveRecursive = (currentBlocks: ReportBlock[], id: string, direction: 'up' | 'down'): ReportBlock[] => {
+        // Try to move at this level first
+        if (currentBlocks.some(b => b.id === id)) {
+            return moveInList(currentBlocks, id, direction);
+        }
 
-            return moveInList(prev);
+        // Recurse
+        return currentBlocks.map(block => {
+            if (block.columns) {
+                return {
+                    ...block,
+                    columns: block.columns.map(col => ({
+                        ...col,
+                        blocks: moveRecursive(col.blocks, id, direction)
+                    }))
+                };
+            }
+            return block;
         });
+    };
+
+
+    const moveBlock = (id: string, direction: 'up' | 'down') => {
+        setBlocks(prev => moveRecursive(prev, id, direction));
     };
 
     const updateBlockOrder = (newBlocks: ReportBlock[]) => {
@@ -187,16 +228,8 @@ export const ReportProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <ReportContext.Provider value={{ blocks, metadata, addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder, updateMetadata }}>
+        <ReportContext.Provider value={{ blocks, metadata, viewMode, setViewMode, addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder, updateMetadata }}>
             {children}
         </ReportContext.Provider>
     );
-};
-
-export const useReport = () => {
-    const context = useContext(ReportContext);
-    if (!context) {
-        throw new Error('useReport must be used within a ReportProvider');
-    }
-    return context;
 };
