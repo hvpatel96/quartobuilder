@@ -36,7 +36,28 @@ export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetada
             if (block.type === 'text') {
                 content += `\n${block.content}\n`;
             } else if (block.type === 'code') {
-                content += `\n\`\`\`{${block.language || 'r'}}\n${block.content}\n\`\`\`\n`;
+                const lang = block.language || 'r';
+                const options = block.metadata?.blockOptions || {};
+                const echo = options.echo ?? false;
+                const message = options.message ?? false;
+                const warning = options.warning ?? false;
+                const output = options.output ?? true;
+
+                let optionsStr = "";
+                if (lang !== 'markdown') {
+                    // Echo (Default false, so if true we can be explicit or just leave it if Quarto defaults true? 
+                    // Quarto default is true. Editor default is false.
+                    // If editor is false (default), we must write "echo: false".
+                    // If editor is true, we can write "echo: true".
+                    if (echo === false) optionsStr += "#| echo: false\n";
+                    else optionsStr += "#| echo: true\n";
+
+                    if (message === false) optionsStr += "#| message: false\n";
+                    if (warning === false) optionsStr += "#| warning: false\n";
+                    if (output === false) optionsStr += "#| output: false\n";
+                }
+
+                content += `\n\`\`\`{${lang}}\n${optionsStr}${block.content}\n\`\`\`\n`;
             } else if (block.type === 'image' && block.content) {
                 // Check if it's a data URL
                 if (block.content.startsWith('data:image')) {
@@ -60,7 +81,19 @@ export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetada
                     content += `\n![${caption}](${block.content})\n`;
                 }
             } else if (block.type === 'html') {
-                content += `\n\`\`\`{=html}\n${block.content}\n\`\`\`\n`;
+                const htmlOptions = block.metadata?.blockOptions || {};
+                const htmlEcho = htmlOptions.echo ?? false; // Default false
+                const htmlOutput = htmlOptions.output ?? true; // Default true
+
+                // Echo: Show the source as a syntax-highlighted code block if true
+                if (htmlEcho) {
+                    content += `\n\`\`\`html\n${block.content}\n\`\`\`\n`;
+                }
+
+                // Output: Render the raw HTML if true
+                if (htmlOutput) {
+                    content += `\n\`\`\`{=html}\n${block.content}\n\`\`\`\n`;
+                }
             } else if (block.type === 'pagebreak') {
                 content += '\n{{< pagebreak >}}\n';
             } else if (block.type === 'layout' && block.columns) {

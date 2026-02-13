@@ -14,11 +14,28 @@ export const PreviewBlock = ({ block }: PreviewBlockProps) => {
         case 'text':
             return <PreviewText content={block.content} />;
         case 'code':
+            // Defaults: echo=false, message=false, warning=false, output=true
+            const codeOptions = block.metadata?.blockOptions || {};
+            const codeEcho = codeOptions.echo ?? false;
+            // We can't show actual output in preview, but we can respect the Echo flag.
+
+            if (!codeEcho) return null; // Hide code if echo is false
             return <PreviewCode content={block.content} language={block.language} />;
+
         case 'image':
             return <PreviewImage content={block.content} caption={block.metadata?.caption} />;
+
         case 'html':
-            return <PreviewHtml content={block.content} />;
+            const htmlOptions = block.metadata?.blockOptions || {};
+            const htmlEcho = htmlOptions.echo ?? false;
+            const htmlOutput = htmlOptions.output ?? true;
+
+            return (
+                <div className="flex flex-col gap-4">
+                    {htmlEcho && <PreviewCode content={block.content} language="html" />}
+                    {htmlOutput && <PreviewHtml content={block.content} />}
+                </div>
+            );
         case 'layout':
             return <PreviewLayout block={block} />;
         case 'pagebreak':

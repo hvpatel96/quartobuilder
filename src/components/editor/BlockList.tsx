@@ -48,8 +48,10 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
                         <CodeBlock
                             content={block.content}
                             language={block.language || 'r'}
+                            metadata={block.metadata}
                             onChange={(content) => updateBlock(block.id, { content })}
                             onLanguageChange={(lang) => updateBlock(block.id, { language: lang })}
+                            onMetadataChange={(metadata) => updateBlock(block.id, { metadata })}
                         />
                     )}
                     {block.type === 'image' && (
@@ -63,7 +65,9 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
                     {block.type === 'html' && (
                         <HtmlBlock
                             content={block.content}
+                            metadata={block.metadata}
                             onChange={(content) => updateBlock(block.id, { content })}
+                            onMetadataChange={(metadata) => updateBlock(block.id, { metadata })}
                         />
                     )}
                     {block.type === 'layout' && (

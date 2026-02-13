@@ -20,6 +20,12 @@ export interface ReportBlock {
     language?: string; // For code blocks (e.g., 'r', 'python')
     metadata?: {
         caption?: string; // For images
+        blockOptions?: {
+            echo?: boolean;
+            message?: boolean;
+            warning?: boolean;
+            output?: boolean;
+        };
         [key: string]: any;
     };
     columns?: ReportColumn[]; // For layout blocks
