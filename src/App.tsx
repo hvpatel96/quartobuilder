@@ -49,16 +49,17 @@ function MainContent() {
         "h-full w-full transition-all duration-300",
         viewMode === 'split' ? "flex gap-4" : "max-w-4xl mx-auto"
       )}>
+        {showMetadata && <MetadataPanel onClose={() => setShowMetadata(false)} />}
+        {showDatasets && <DatasetPanel onClose={() => setShowDatasets(false)} />}
+
         {/* Editor Pane */}
         {(viewMode === 'edit' || viewMode === 'split') && (
           <div className={clsx(
             "flex-1 min-w-0 transition-all duration-300",
             viewMode === 'split'
-              ? "h-full overflow-y-auto bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6"
-              : "bg-white dark:bg-gray-900 min-h-[800px] shadow-sm rounded-xl border border-gray-200 dark:border-gray-800 p-8 md:p-12 mb-20"
+              ? "h-full overflow-y-auto bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 py-6 pr-6 pl-14"
+              : "bg-white dark:bg-gray-900 min-h-[800px] shadow-sm rounded-xl border border-gray-200 dark:border-gray-800 py-8 pr-8 pl-14 md:p-12 mb-20"
           )}>
-            {showMetadata && <MetadataPanel onClose={() => setShowMetadata(false)} />}
-            {showDatasets && <DatasetPanel onClose={() => setShowDatasets(false)} />}
             <ReportEditor />
           </div>
         )}

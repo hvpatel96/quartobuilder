@@ -62,97 +62,130 @@ export const DatasetPanel = ({ onClose }: DatasetPanelProps) => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg shadow-lg p-5 sticky top-20 max-h-[80vh] overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-500">Datasets</h3>
-                <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                    <X className="w-4 h-4" />
-                </button>
-            </div>
-
-            {/* Upload Area */}
-            <div
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={onDrop}
-                onClick={() => fileInputRef.current?.click()}
-                className={clsx(
-                    "border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer transition-colors mb-4",
-                    isDragging ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600"
-                )}
-            >
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".csv,.xlsx,.tsv"
-                    onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
-                />
-                <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                <p className="text-xs text-center text-gray-500 font-medium">Click to upload or drag & drop</p>
-                <p className="text-[10px] text-center text-gray-400 mt-1">CSV, Excel, TSV</p>
-            </div>
-
-            {/* Dataset List */}
-            <div className="space-y-3 flex-1 overflow-y-auto min-h-[100px]">
-                {datasets.length === 0 && (
-                    <div className="text-center py-4 text-gray-400 text-xs italic">
-                        No datasets uploaded yet.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+                <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+                    <div>
+                        <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100">Dataset Management</h3>
+                        <p className="text-xs text-gray-500 mt-1">Upload and manage datasets for your analysis.</p>
                     </div>
-                )}
+                    <button
+                        onClick={onClose}
+                        className="p-2 -mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
 
-                {datasets.map(dataset => (
-                    <div key={dataset.id} className="border border-gray-200 dark:border-gray-700 rounded-md p-3 group">
-                        <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                                <FileSpreadsheet className="w-4 h-4 text-green-600 flex-shrink-0" />
-                                <span className="text-sm font-medium truncate" title={dataset.name}>{dataset.name}</span>
-                            </div>
-                            <button
-                                onClick={() => removeDataset(dataset.id)}
-                                className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                            >
-                                <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                <div className="p-6 flex-1 overflow-y-auto">
+                    {/* Upload Area */}
+                    <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={onDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className={clsx(
+                            "border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all mb-6",
+                            isDragging
+                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 scale-[0.99]"
+                                : "border-gray-300 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        )}
+                    >
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept=".csv,.xlsx,.tsv"
+                            onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
+                        />
+                        <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-600 dark:text-blue-400 mb-3">
+                            <Upload className="w-6 h-6" />
                         </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">Click to upload or drag & drop</p>
+                        <p className="text-xs text-gray-500 mt-1">Supports CSV, Excel, and TSV files</p>
+                    </div>
 
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                            <span>{(dataset.size / 1024).toFixed(1)} KB</span>
-                            <button
-                                onClick={() => navigator.clipboard.writeText(`data/${dataset.name}`)}
-                                className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                                title="Copy path to clipboard"
-                            >
-                                <Copy className="w-3 h-3" />
-                                <span className="font-mono">data/{dataset.name}</span>
-                            </button>
-                        </div>
+                    {/* Dataset List */}
+                    <div className="space-y-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-500 mb-3">Uploaded Datasets</h4>
 
-                        {/* Preview (CSV only for now) */}
-                        {dataset.type === 'csv' && dataset.preview.length > 0 && (
-                            <div className="mt-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-100 dark:border-gray-700 overflow-x-auto">
-                                <table className="w-full text-[10px] text-left">
-                                    <thead>
-                                        <tr className="border-b border-gray-200 dark:border-gray-700">
-                                            {Object.keys(dataset.preview[0]).map(key => (
-                                                <th key={key} className="px-2 py-1 font-semibold text-gray-600 dark:text-gray-300 whitespace-nowrap">{key}</th>
-                                            ))}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {dataset.preview.map((row, i) => (
-                                            <tr key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
-                                                {Object.values(row).map((val: any, j) => (
-                                                    <td key={j} className="px-2 py-1 text-gray-500 dark:text-gray-400 whitespace-nowrap">{String(val).slice(0, 20)}</td>
-                                                ))}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        {datasets.length === 0 && (
+                            <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                                <p className="text-sm text-gray-400 italic">No datasets uploaded yet.</p>
                             </div>
                         )}
+
+                        {datasets.map(dataset => (
+                            <div key={dataset.id} className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-700 rounded-lg p-4 group hover:shadow-md transition-shadow">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg text-green-700 dark:text-green-400">
+                                            <FileSpreadsheet className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <div className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate" title={dataset.name}>{dataset.name}</div>
+                                            <div className="text-xs text-gray-500">{(dataset.size / 1024).toFixed(1)} KB • {dataset.type.toUpperCase()}</div>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => navigator.clipboard.writeText(`data/${dataset.name}`)}
+                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
+                                            title="Copy path to clipboard"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => removeDataset(dataset.id)}
+                                            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                                            title="Delete dataset"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Preview (CSV only for now) */}
+                                {dataset.type === 'csv' && dataset.preview.length > 0 && (
+                                    <div className="bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-100 dark:border-gray-800 overflow-hidden">
+                                        <div className="overflow-x-auto custom-scrollbar">
+                                            <table className="w-full text-[10px] text-left">
+                                                <thead className="bg-gray-100 dark:bg-gray-800">
+                                                    <tr>
+                                                        {Object.keys(dataset.preview[0]).map(key => (
+                                                            <th key={key} className="px-3 py-2 font-semibold text-gray-600 dark:text-gray-300 whitespace-nowrap border-b border-gray-200 dark:border-gray-700">{key}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {dataset.preview.map((row, i) => (
+                                                        <tr key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-white dark:hover:bg-gray-800/50 transition-colors">
+                                                            {Object.values(row).map((val: any, j) => (
+                                                                <td key={j} className="px-3 py-2 text-gray-500 dark:text-gray-400 whitespace-nowrap">{String(val).slice(0, 30)}</td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div className="px-3 py-1 bg-gray-50 dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 text-[10px] text-gray-400 text-center">
+                                            Showing first 5 rows
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                ))}
+                </div>
+
+                <div className="p-5 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-950/50 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-5 py-2.5 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 font-medium rounded-lg hover:opacity-90 transition-opacity"
+                    >
+                        Done
+                    </button>
+                </div>
             </div>
         </div>
     );
