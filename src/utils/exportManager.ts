@@ -2,21 +2,51 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { ReportBlock, ReportMetadata, Dataset } from '../types';
 
-export const generateYAML = (metadata: ReportMetadata) => {
-    return `---
-title: "${metadata.title}"
-author: "${metadata.author}"
-date: "${metadata.date}"
-format: ${metadata.format}
----
-`;
-};
+// generateYAML moved inside exportReport to access styling options
 
 export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetadata, datasets: Dataset[] = []) => {
     const zip = new JSZip();
     const imageFolder = zip.folder("images");
     const dataFolder = zip.folder("data");
-    let qmdContent = generateYAML(metadata);
+    const wwwFolder = zip.folder("www"); // For CSS
+
+    // Styling Options
+    const styling = metadata.styling || {};
+    const htmlStyle = styling.html || {};
+    const pdfStyle = styling.pdf || {};
+
+    // 1. Handle HTML CSS
+    let cssFileName = "";
+    if (htmlStyle.cssContent && wwwFolder) {
+        cssFileName = "styles.css";
+        wwwFolder.file(cssFileName, htmlStyle.cssContent);
+    }
+
+    // 2. Generate YAML with styling options
+    const generateStylingYAML = () => {
+        let yaml = `---
+title: "${metadata.title}"
+author: "${metadata.author}"
+date: "${metadata.date}"
+format: 
+  ${metadata.format}:
+`;
+        // Indent sub-options
+        if (metadata.format === 'html') {
+            if (cssFileName) {
+                yaml += `    css: www/${cssFileName}\n`;
+            }
+        } else if (metadata.format === 'pdf') {
+            if (pdfStyle.toc) yaml += `    toc: true\n`;
+            if (pdfStyle.numberSections) yaml += `    number-sections: true\n`;
+            if (pdfStyle.margin) yaml += `    geometry: margin=${pdfStyle.margin}\n`;
+        }
+
+        yaml += `---\n`;
+        return yaml;
+    };
+
+    let qmdContent = generateStylingYAML();
 
     // Save Datasets
     if (dataFolder && datasets.length > 0) {

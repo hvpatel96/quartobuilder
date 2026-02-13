@@ -5,6 +5,16 @@ export interface ReportMetadata {
     author: string;
     date: string;
     format: 'html' | 'pdf' | 'docx';
+    styling?: {
+        html?: {
+            cssContent?: string;
+        };
+        pdf?: {
+            toc?: boolean;
+            numberSections?: boolean;
+            margin?: string;
+        };
+    };
 }
 
 export interface ReportColumn {

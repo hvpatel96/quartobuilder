@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database } from 'lucide-react';
+import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database, Palette } from 'lucide-react';
 import { useReport } from '../contexts/ReportContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -11,13 +11,14 @@ interface MainLayoutProps {
     onLoad: (file: File) => void;
     onToggleMetadata?: () => void;
     onToggleDatasets?: () => void;
+    onToggleStyling?: () => void;
 }
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs));
 }
 
-export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets }: MainLayoutProps) => {
+export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets, onToggleStyling }: MainLayoutProps) => {
     const { viewMode, setViewMode } = useReport();
 
     return (
@@ -47,6 +48,13 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
                         >
                             <Database className="w-5 h-5" />
                             <span className="hidden md:inline text-sm font-medium">Datasets</span>
+                        </button>
+                        <button
+                            onClick={onToggleStyling}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-left"
+                        >
+                            <Palette className="w-5 h-5" />
+                            <span className="hidden md:inline text-sm font-medium">Styling</span>
                         </button>
                     </div>
                 </nav>

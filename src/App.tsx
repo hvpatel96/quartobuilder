@@ -5,6 +5,7 @@ import { ReportEditor } from './components/editor/ReportEditor';
 import { ReportPreview } from './components/preview/ReportPreview';
 import { MetadataPanel } from './components/metadata/MetadataPanel';
 import { DatasetPanel } from './components/editor/DatasetPanel';
+import { StylingPanel } from './components/metadata/StylingPanel';
 import { exportReport } from './utils/exportManager';
 import { saveConfiguration, loadConfiguration } from './utils/storageManager';
 import { clsx } from 'clsx';
@@ -13,6 +14,7 @@ function MainContent() {
   const { blocks, metadata, viewMode, loadReport, datasets } = useReport();
   const [showMetadata, setShowMetadata] = useState(false);
   const [showDatasets, setShowDatasets] = useState(false);
+  const [showStyling, setShowStyling] = useState(false);
 
   const handleExport = async () => {
     try {
@@ -42,8 +44,9 @@ function MainContent() {
       onExport={handleExport}
       onSave={handleSave}
       onLoad={handleLoad}
-      onToggleMetadata={() => { setShowMetadata(!showMetadata); setShowDatasets(false); }}
-      onToggleDatasets={() => { setShowDatasets(!showDatasets); setShowMetadata(false); }}
+      onToggleMetadata={() => { setShowMetadata(!showMetadata); setShowDatasets(false); setShowStyling(false); }}
+      onToggleDatasets={() => { setShowDatasets(!showDatasets); setShowMetadata(false); setShowStyling(false); }}
+      onToggleStyling={() => { setShowStyling(!showStyling); setShowMetadata(false); setShowDatasets(false); }}
     >
       <div className={clsx(
         "h-full w-full transition-all duration-300",
@@ -51,6 +54,7 @@ function MainContent() {
       )}>
         {showMetadata && <MetadataPanel onClose={() => setShowMetadata(false)} />}
         {showDatasets && <DatasetPanel onClose={() => setShowDatasets(false)} />}
+        {showStyling && <StylingPanel isOpen={showStyling} onClose={() => setShowStyling(false)} />}
 
         {/* Editor Pane */}
         {(viewMode === 'edit' || viewMode === 'split') && (
