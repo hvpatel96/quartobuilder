@@ -17,6 +17,11 @@ export const ReportPreview = () => {
                 )}
 
                 {/* Content */}
+                {metadata.styling?.html?.cssContent && (
+                    <style>
+                        {metadata.styling.html.cssContent}
+                    </style>
+                )}
                 <PreviewBlockList blocks={blocks} />
             </div>
         </div>
