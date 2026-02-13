@@ -4,17 +4,19 @@ import { MainLayout } from './layouts/MainLayout';
 import { ReportEditor } from './components/editor/ReportEditor';
 import { ReportPreview } from './components/preview/ReportPreview';
 import { MetadataPanel } from './components/metadata/MetadataPanel';
+import { DatasetPanel } from './components/editor/DatasetPanel';
 import { exportReport } from './utils/exportManager';
 import { saveConfiguration, loadConfiguration } from './utils/storageManager';
 import { clsx } from 'clsx';
 
 function MainContent() {
-  const { blocks, metadata, viewMode, loadReport } = useReport();
+  const { blocks, metadata, viewMode, loadReport, datasets } = useReport();
   const [showMetadata, setShowMetadata] = useState(false);
+  const [showDatasets, setShowDatasets] = useState(false);
 
   const handleExport = async () => {
     try {
-      await exportReport(blocks, metadata);
+      await exportReport(blocks, metadata, datasets);
     } catch (error) {
       console.error("Export failed:", error);
       alert("Failed to export report.");
@@ -40,7 +42,8 @@ function MainContent() {
       onExport={handleExport}
       onSave={handleSave}
       onLoad={handleLoad}
-      onToggleMetadata={() => setShowMetadata(!showMetadata)}
+      onToggleMetadata={() => { setShowMetadata(!showMetadata); setShowDatasets(false); }}
+      onToggleDatasets={() => { setShowDatasets(!showDatasets); setShowMetadata(false); }}
     >
       <div className={clsx(
         "h-full w-full transition-all duration-300",
@@ -55,6 +58,7 @@ function MainContent() {
               : "bg-white dark:bg-gray-900 min-h-[800px] shadow-sm rounded-xl border border-gray-200 dark:border-gray-800 p-8 md:p-12 mb-20"
           )}>
             {showMetadata && <MetadataPanel onClose={() => setShowMetadata(false)} />}
+            {showDatasets && <DatasetPanel onClose={() => setShowDatasets(false)} />}
             <ReportEditor />
           </div>
         )}

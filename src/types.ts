@@ -24,3 +24,11 @@ export interface ReportBlock {
     };
     columns?: ReportColumn[]; // For layout blocks
 }
+export interface Dataset {
+    id: string;
+    name: string; // "data.csv"
+    type: 'csv' | 'excel' | 'tsv' | 'json';
+    content: string | ArrayBuffer; // Base64 or raw for export
+    preview: any[]; // First ~5 rows for preview
+    size: number;
+}

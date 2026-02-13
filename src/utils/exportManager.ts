@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import type { ReportBlock, ReportMetadata } from '../types';
+import type { ReportBlock, ReportMetadata, Dataset } from '../types';
 
 export const generateYAML = (metadata: ReportMetadata) => {
     return `---
@@ -12,10 +12,22 @@ format: ${metadata.format}
 `;
 };
 
-export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetadata) => {
+export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetadata, datasets: Dataset[] = []) => {
     const zip = new JSZip();
     const imageFolder = zip.folder("images");
+    const dataFolder = zip.folder("data");
     let qmdContent = generateYAML(metadata);
+
+    // Save Datasets
+    if (dataFolder && datasets.length > 0) {
+        datasets.forEach(dataset => {
+            if (typeof dataset.content === 'string') {
+                dataFolder.file(dataset.name, dataset.content);
+            } else {
+                dataFolder.file(dataset.name, dataset.content);
+            }
+        });
+    }
 
     // Recursive function to process blocks
     const processBlocks = (blockList: ReportBlock[]): string => {

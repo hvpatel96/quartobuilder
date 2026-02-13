@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { ReportBlock, BlockType, ReportMetadata } from '../types';
+import type { ReportBlock, BlockType, ReportMetadata, Dataset } from '../types';
 
 interface ReportContextType {
     blocks: ReportBlock[];
@@ -14,6 +14,9 @@ interface ReportContextType {
     updateBlockOrder: (newBlocks: ReportBlock[]) => void;
     loadReport: (blocks: ReportBlock[], metadata: ReportMetadata) => void;
     updateMetadata: (updates: Partial<ReportMetadata>) => void;
+    datasets: Dataset[];
+    addDataset: (dataset: Dataset) => void;
+    removeDataset: (id: string) => void;
 }
 
 const defaultContext: ReportContextType = {
@@ -32,7 +35,10 @@ const defaultContext: ReportContextType = {
     moveBlock: () => { },
     updateBlockOrder: () => { },
     loadReport: () => { },
-    updateMetadata: () => { }
+    updateMetadata: () => { },
+    datasets: [],
+    addDataset: () => { },
+    removeDataset: () => { }
 };
 
 const ReportContext = createContext<ReportContextType>(defaultContext);
@@ -52,6 +58,7 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
         date: '',
         format: 'html'
     });
+    const [datasets, setDatasets] = useState<Dataset[]>([]);
 
     const findContainer = (
         currentBlocks: ReportBlock[],
@@ -234,8 +241,21 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
         setMetadata(prev => ({ ...prev, ...updates }));
     };
 
+    const addDataset = (dataset: Dataset) => {
+        setDatasets(prev => [...prev, dataset]);
+    };
+
+    const removeDataset = (id: string) => {
+        setDatasets(prev => prev.filter(d => d.id !== id));
+    };
+
     return (
-        <ReportContext.Provider value={{ blocks, metadata, viewMode, setViewMode, addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder, loadReport, updateMetadata }}>
+        <ReportContext.Provider value={{
+            blocks, metadata, viewMode, setViewMode,
+            addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder,
+            loadReport, updateMetadata,
+            datasets, addDataset, removeDataset
+        }}>
             {children}
         </ReportContext.Provider>
     );
