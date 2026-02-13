@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ReportProvider, useReport } from './contexts/ReportContext';
+import { ExecutionProvider } from './contexts/ExecutionContext';
 import { MainLayout } from './layouts/MainLayout';
 import { ReportEditor } from './components/editor/ReportEditor';
 import { ReportPreview } from './components/preview/ReportPreview';
@@ -10,6 +11,8 @@ import { ExamplesPanel } from './components/examples/ExamplesPanel';
 import { exportReport } from './utils/exportManager';
 import { saveConfiguration, loadConfiguration } from './utils/storageManager';
 import { clsx } from 'clsx';
+
+import { DatasetSync } from './components/DatasetSync';
 
 function MainContent() {
   const { blocks, metadata, viewMode, loadReport, datasets, resetReport } = useReport();
@@ -97,7 +100,10 @@ function MainContent() {
 function App() {
   return (
     <ReportProvider>
-      <MainContent />
+      <ExecutionProvider>
+        <DatasetSync />
+        <MainContent />
+      </ExecutionProvider>
     </ReportProvider>
   );
 }

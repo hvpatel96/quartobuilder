@@ -4,6 +4,7 @@ import { PreviewCode } from './PreviewCode';
 import { PreviewImage } from './PreviewImage';
 import { PreviewHtml } from './PreviewHtml';
 import { PreviewLayout } from './PreviewLayout';
+import { ExecutionOutput } from './ExecutionOutput';
 
 interface PreviewBlockProps {
     block: ReportBlock;
@@ -14,13 +15,27 @@ export const PreviewBlock = ({ block }: PreviewBlockProps) => {
         case 'text':
             return <PreviewText content={block.content} />;
         case 'code':
-            // Defaults: echo=false, message=false, warning=false, output=true
             const codeOptions = block.metadata?.blockOptions || {};
             const codeEcho = codeOptions.echo ?? false;
-            // We can't show actual output in preview, but we can respect the Echo flag.
+            const codeOutput = codeOptions.output ?? true;
 
-            if (!codeEcho) return null; // Hide code if echo is false
-            return <PreviewCode content={block.content} language={block.language} />;
+            if (!codeEcho && !codeOutput) return null;
+
+            return (
+                <div className="space-y-2 group">
+                    {codeEcho && (
+                        <PreviewCode content={block.content} language={block.language} />
+                    )}
+                    {(block.language === 'r' || block.language === 'python') && (
+                        <ExecutionOutput
+                            blockId={block.id}
+                            code={block.content}
+                            language={block.language}
+                            showOutput={codeOutput}
+                        />
+                    )}
+                </div>
+            );
 
         case 'image':
             return <PreviewImage content={block.content} caption={block.metadata?.caption} />;
