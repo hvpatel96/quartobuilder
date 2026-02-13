@@ -17,6 +17,7 @@ interface ReportContextType {
     datasets: Dataset[];
     addDataset: (dataset: Dataset) => void;
     removeDataset: (id: string) => void;
+    resetReport: () => void;
 }
 
 const defaultContext: ReportContextType = {
@@ -38,7 +39,8 @@ const defaultContext: ReportContextType = {
     updateMetadata: () => { },
     datasets: [],
     addDataset: () => { },
-    removeDataset: () => { }
+    removeDataset: () => { },
+    resetReport: () => { }
 };
 
 const ReportContext = createContext<ReportContextType>(defaultContext);
@@ -249,12 +251,23 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
         setDatasets(prev => prev.filter(d => d.id !== id));
     };
 
+    const resetReport = () => {
+        setBlocks([]);
+        setMetadata({
+            title: '',
+            author: '',
+            date: '',
+            format: 'html'
+        });
+    };
+
     return (
         <ReportContext.Provider value={{
             blocks, metadata, viewMode, setViewMode,
             addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder,
             loadReport, updateMetadata,
-            datasets, addDataset, removeDataset
+            datasets, addDataset, removeDataset,
+            resetReport
         }}>
             {children}
         </ReportContext.Provider>

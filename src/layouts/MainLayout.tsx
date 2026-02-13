@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database, Palette } from 'lucide-react';
+import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database, Palette, FilePlus, Library } from 'lucide-react';
 import { useReport } from '../contexts/ReportContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -11,14 +11,17 @@ interface MainLayoutProps {
     onLoad: (file: File) => void;
     onToggleMetadata?: () => void;
     onToggleDatasets?: () => void;
+
     onToggleStyling?: () => void;
+    onToggleExamples?: () => void;
+    onNew: () => void;
 }
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs));
 }
 
-export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets, onToggleStyling }: MainLayoutProps) => {
+export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets, onToggleStyling, onToggleExamples, onNew }: MainLayoutProps) => {
     const { viewMode, setViewMode } = useReport();
 
     return (
@@ -55,6 +58,13 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
                         >
                             <Palette className="w-5 h-5" />
                             <span className="hidden md:inline text-sm font-medium">Styling</span>
+                        </button>
+                        <button
+                            onClick={onToggleExamples}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-left"
+                        >
+                            <Library className="w-5 h-5" />
+                            <span className="hidden md:inline text-sm font-medium">Examples</span>
                         </button>
                     </div>
                 </nav>
@@ -118,6 +128,13 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
 
                     {/* Right Side: Actions */}
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={onNew}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors"
+                            title="New Report"
+                        >
+                            <FilePlus className="w-4 h-4" />
+                        </button>
                         <label className="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors" title="Load Configuration">
                             <input
                                 type="file"

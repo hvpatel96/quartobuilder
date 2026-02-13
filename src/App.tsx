@@ -6,15 +6,17 @@ import { ReportPreview } from './components/preview/ReportPreview';
 import { MetadataPanel } from './components/metadata/MetadataPanel';
 import { DatasetPanel } from './components/editor/DatasetPanel';
 import { StylingPanel } from './components/metadata/StylingPanel';
+import { ExamplesPanel } from './components/examples/ExamplesPanel';
 import { exportReport } from './utils/exportManager';
 import { saveConfiguration, loadConfiguration } from './utils/storageManager';
 import { clsx } from 'clsx';
 
 function MainContent() {
-  const { blocks, metadata, viewMode, loadReport, datasets } = useReport();
+  const { blocks, metadata, viewMode, loadReport, datasets, resetReport } = useReport();
   const [showMetadata, setShowMetadata] = useState(false);
   const [showDatasets, setShowDatasets] = useState(false);
   const [showStyling, setShowStyling] = useState(false);
+  const [showExamples, setShowExamples] = useState(false);
 
   const handleExport = async () => {
     try {
@@ -39,14 +41,23 @@ function MainContent() {
     }
   };
 
+  const handleNew = () => {
+    if (confirm("Are you sure you want to create a new report? Unsaved changes will be lost.")) {
+      resetReport();
+    }
+  };
+
   return (
     <MainLayout
       onExport={handleExport}
       onSave={handleSave}
       onLoad={handleLoad}
-      onToggleMetadata={() => { setShowMetadata(!showMetadata); setShowDatasets(false); setShowStyling(false); }}
-      onToggleDatasets={() => { setShowDatasets(!showDatasets); setShowMetadata(false); setShowStyling(false); }}
-      onToggleStyling={() => { setShowStyling(!showStyling); setShowMetadata(false); setShowDatasets(false); }}
+      onNew={handleNew}
+
+      onToggleMetadata={() => { setShowMetadata(!showMetadata); setShowDatasets(false); setShowStyling(false); setShowExamples(false); }}
+      onToggleDatasets={() => { setShowDatasets(!showDatasets); setShowMetadata(false); setShowStyling(false); setShowExamples(false); }}
+      onToggleStyling={() => { setShowStyling(!showStyling); setShowMetadata(false); setShowDatasets(false); setShowExamples(false); }}
+      onToggleExamples={() => { setShowExamples(!showExamples); setShowMetadata(false); setShowDatasets(false); setShowStyling(false); }}
     >
       <div className={clsx(
         "h-full w-full transition-all duration-300",
@@ -55,6 +66,7 @@ function MainContent() {
         {showMetadata && <MetadataPanel onClose={() => setShowMetadata(false)} />}
         {showDatasets && <DatasetPanel onClose={() => setShowDatasets(false)} />}
         {showStyling && <StylingPanel isOpen={showStyling} onClose={() => setShowStyling(false)} />}
+        {showExamples && <ExamplesPanel onClose={() => setShowExamples(false)} />}
 
         {/* Editor Pane */}
         {(viewMode === 'edit' || viewMode === 'split') && (
