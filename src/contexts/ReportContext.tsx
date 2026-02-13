@@ -12,6 +12,7 @@ interface ReportContextType {
     removeBlock: (id: string) => void;
     moveBlock: (id: string, direction: 'up' | 'down') => void;
     updateBlockOrder: (newBlocks: ReportBlock[]) => void;
+    loadReport: (blocks: ReportBlock[], metadata: ReportMetadata) => void;
     updateMetadata: (updates: Partial<ReportMetadata>) => void;
 }
 
@@ -30,6 +31,7 @@ const defaultContext: ReportContextType = {
     removeBlock: () => { },
     moveBlock: () => { },
     updateBlockOrder: () => { },
+    loadReport: () => { },
     updateMetadata: () => { }
 };
 
@@ -223,12 +225,17 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
         setBlocks(newBlocks);
     };
 
+    const loadReport = (newBlocks: ReportBlock[], newMetadata: ReportMetadata) => {
+        setBlocks(newBlocks);
+        setMetadata(newMetadata);
+    };
+
     const updateMetadata = (updates: Partial<ReportMetadata>) => {
         setMetadata(prev => ({ ...prev, ...updates }));
     };
 
     return (
-        <ReportContext.Provider value={{ blocks, metadata, viewMode, setViewMode, addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder, updateMetadata }}>
+        <ReportContext.Provider value={{ blocks, metadata, viewMode, setViewMode, addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder, loadReport, updateMetadata }}>
             {children}
         </ReportContext.Provider>
     );

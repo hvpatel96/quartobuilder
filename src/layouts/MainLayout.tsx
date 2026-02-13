@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool } from 'lucide-react';
+import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen } from 'lucide-react';
 import { useReport } from '../contexts/ReportContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -7,6 +7,8 @@ import { twMerge } from 'tailwind-merge';
 interface MainLayoutProps {
     children: ReactNode;
     onExport: () => void;
+    onSave: () => void;
+    onLoad: (file: File) => void;
     onToggleMetadata?: () => void;
 }
 
@@ -14,7 +16,7 @@ export function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs));
 }
 
-export const MainLayout = ({ children, onExport, onToggleMetadata }: MainLayoutProps) => {
+export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata }: MainLayoutProps) => {
     const { viewMode, setViewMode } = useReport();
 
     return (
@@ -100,7 +102,26 @@ export const MainLayout = ({ children, onExport, onToggleMetadata }: MainLayoutP
 
                     {/* Right Side: Actions */}
                     <div className="flex items-center gap-2">
-                        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors">
+                        <label className="cursor-pointer p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors" title="Load Configuration">
+                            <input
+                                type="file"
+                                accept=".json"
+                                className="hidden"
+                                onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                        onLoad(e.target.files[0]);
+                                        // Reset value to allow re-selecting same file
+                                        e.target.value = '';
+                                    }
+                                }}
+                            />
+                            <FolderOpen className="w-4 h-4" />
+                        </label>
+                        <button
+                            onClick={onSave}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors"
+                            title="Save Configuration"
+                        >
                             <Save className="w-4 h-4" />
                         </button>
                     </div>

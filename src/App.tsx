@@ -5,10 +5,11 @@ import { ReportEditor } from './components/editor/ReportEditor';
 import { ReportPreview } from './components/preview/ReportPreview';
 import { MetadataPanel } from './components/metadata/MetadataPanel';
 import { exportReport } from './utils/exportManager';
+import { saveConfiguration, loadConfiguration } from './utils/storageManager';
 import { clsx } from 'clsx';
 
 function MainContent() {
-  const { blocks, metadata, viewMode } = useReport();
+  const { blocks, metadata, viewMode, loadReport } = useReport();
   const [showMetadata, setShowMetadata] = useState(false);
 
   const handleExport = async () => {
@@ -20,8 +21,27 @@ function MainContent() {
     }
   };
 
+  const handleSave = () => {
+    saveConfiguration(blocks, metadata);
+  };
+
+  const handleLoad = async (file: File) => {
+    try {
+      const config = await loadConfiguration(file);
+      loadReport(config.blocks, config.metadata);
+    } catch (error) {
+      console.error("Failed to load configuration", error);
+      alert("Failed to load configuration file.");
+    }
+  };
+
   return (
-    <MainLayout onExport={handleExport} onToggleMetadata={() => setShowMetadata(!showMetadata)}>
+    <MainLayout
+      onExport={handleExport}
+      onSave={handleSave}
+      onLoad={handleLoad}
+      onToggleMetadata={() => setShowMetadata(!showMetadata)}
+    >
       <div className={clsx(
         "h-full w-full transition-all duration-300",
         viewMode === 'split' ? "flex gap-4" : "max-w-4xl mx-auto"
