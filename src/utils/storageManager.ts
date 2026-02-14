@@ -36,6 +36,26 @@ export const loadConfiguration = (file: File): Promise<{ blocks: ReportBlock[], 
                     throw new Error("Invalid configuration file: 'metadata' is missing.");
                 }
 
+                // Validate block structure
+                const validTypes = ['text', 'code', 'image', 'html', 'layout', 'pagebreak'];
+                for (const block of config.blocks) {
+                    if (!block.id || typeof block.id !== 'string') {
+                        throw new Error("Invalid block: missing or invalid 'id'.");
+                    }
+                    if (!validTypes.includes(block.type)) {
+                        throw new Error(`Invalid block type: '${block.type}'.`);
+                    }
+                    if (typeof block.content !== 'string') {
+                        throw new Error(`Invalid block content for block '${block.id}'.`);
+                    }
+                }
+
+                // Validate metadata format
+                const validFormats = ['html', 'pdf', 'docx'];
+                if (!validFormats.includes(config.metadata.format)) {
+                    throw new Error(`Invalid format: '${config.metadata.format}'.`);
+                }
+
                 resolve({ blocks: config.blocks, metadata: config.metadata });
             } catch (error) {
                 reject(error);

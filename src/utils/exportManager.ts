@@ -22,12 +22,16 @@ export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetada
         wwwFolder.file(cssFileName, htmlStyle.cssContent);
     }
 
+    // Helper: escape strings for safe YAML double-quoted values
+    const escapeYaml = (str: string): string =>
+        str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n');
+
     // 2. Generate YAML with styling options
     const generateStylingYAML = () => {
         let yaml = `---
-title: "${metadata.title}"
-author: "${metadata.author}"
-date: "${metadata.date}"
+title: "${escapeYaml(metadata.title)}"
+author: "${escapeYaml(metadata.author)}"
+date: "${escapeYaml(metadata.date)}"
 format: 
   ${metadata.format}:
 `;
@@ -39,7 +43,10 @@ format:
         } else if (metadata.format === 'pdf') {
             if (pdfStyle.toc) yaml += `    toc: true\n`;
             if (pdfStyle.numberSections) yaml += `    number-sections: true\n`;
-            if (pdfStyle.margin) yaml += `    geometry: margin=${pdfStyle.margin}\n`;
+            if (pdfStyle.margin) {
+                const safeMargin = pdfStyle.margin.replace(/[^a-zA-Z0-9.,\s]/g, '');
+                yaml += `    geometry: margin=${safeMargin}\n`;
+            }
         }
 
         yaml += `---\n`;

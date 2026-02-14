@@ -23,12 +23,18 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
             return;
         case 'writeFile':
             const { filename, content } = data;
+            // Sanitize: only allow the basename (no path traversal)
+            const safeName = filename.replace(/[\\/]/g, '_').replace(/^\.+/, '');
+            if (!safeName) {
+                postMessage({ type: 'error', error: 'Invalid filename' });
+                break;
+            }
             try {
                 // Ensure data directory exists (redundant but safe)
                 try { await webR.FS.mkdir('data'); } catch (e) { }
 
-                // Write file to data/filename
-                const path = `data/${filename}`;
+                // Write file to data/safeName
+                const path = `data/${safeName}`;
 
                 let dataToWrite: Uint8Array;
                 if (typeof content === 'string') {

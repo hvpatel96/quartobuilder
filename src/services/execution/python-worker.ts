@@ -43,12 +43,18 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
             return;
         case 'writeFile':
             const { filename, content } = data;
+            // Sanitize: only allow the basename (no path traversal)
+            const safeName = filename.replace(/[\\/]/g, '_').replace(/^\.+/, '');
+            if (!safeName) {
+                postMessage({ type: 'error', error: 'Invalid filename' });
+                break;
+            }
             if (!pyodide) return;
             try {
                 // Ensure data directory exists
                 pyodide.FS.mkdirTree('data'); // Safe if exists
 
-                const path = `data/${filename}`;
+                const path = `data/${safeName}`;
 
                 if (typeof content === 'string') {
                     console.log(`[Python] Writing file ${path}, type: string, length: ${content.length}`);

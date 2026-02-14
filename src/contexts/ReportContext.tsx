@@ -138,13 +138,13 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
 
     const addBlock = (type: BlockType, parentId?: string, columnId?: string) => {
         const newBlock: ReportBlock = {
-            id: Math.random().toString(36).substr(2, 9),
+            id: crypto.randomUUID(),
             type,
             content: '',
             language: type === 'code' ? 'r' : undefined,
             columns: type === 'layout' ? [
-                { id: Math.random().toString(36).substr(2, 9), width: 50, blocks: [] },
-                { id: Math.random().toString(36).substr(2, 9), width: 50, blocks: [] }
+                { id: crypto.randomUUID(), width: 50, blocks: [] },
+                { id: crypto.randomUUID(), width: 50, blocks: [] }
             ] : undefined
         };
 

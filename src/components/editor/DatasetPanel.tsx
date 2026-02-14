@@ -33,7 +33,7 @@ export const DatasetPanel = ({ onClose }: DatasetPanelProps) => {
             }
 
             const newDataset: Dataset = {
-                id: Math.random().toString(36).substr(2, 9),
+                id: crypto.randomUUID(),
                 name: file.name,
                 type: file.name.endsWith('.csv') ? 'csv' :
                     file.name.endsWith('.xlsx') ? 'excel' :
