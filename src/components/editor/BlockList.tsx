@@ -17,7 +17,7 @@ interface BlockListProps {
 }
 
 export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
-    const { addBlock, updateBlock, removeBlock, moveBlock } = useReport();
+    const { addBlock, updateBlock, removeBlock, moveBlock, duplicateBlock } = useReport();
 
     // Helper to render AddButton 
     const AddButton = ({ onClick, icon, label }: { onClick: () => void, icon: React.ReactNode, label: string }) => (
@@ -36,6 +36,7 @@ export const BlockList = ({ blocks, parentId, columnId }: BlockListProps) => {
                     onDelete={removeBlock}
                     onMoveUp={() => moveBlock(block.id, 'up')}
                     onMoveDown={() => moveBlock(block.id, 'down')}
+                    onDuplicate={duplicateBlock}
                     inColumn={!!columnId}
                 >
                     {block.type === 'text' && (

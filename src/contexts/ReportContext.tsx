@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { ReportBlock, BlockType, ReportMetadata, Dataset } from '../types';
+import { useHistory } from '../hooks/useHistory';
 
 interface ReportContextType {
     blocks: ReportBlock[];
@@ -18,6 +19,11 @@ interface ReportContextType {
     addDataset: (dataset: Dataset) => void;
     removeDataset: (id: string) => void;
     resetReport: () => void;
+    undo: () => void;
+    redo: () => void;
+    canUndo: boolean;
+    canRedo: boolean;
+    duplicateBlock: (id: string) => void;
 }
 
 const defaultContext: ReportContextType = {
@@ -40,7 +46,12 @@ const defaultContext: ReportContextType = {
     datasets: [],
     addDataset: () => { },
     removeDataset: () => { },
-    resetReport: () => { }
+    resetReport: () => { },
+    undo: () => { },
+    redo: () => { },
+    canUndo: false,
+    canRedo: false,
+    duplicateBlock: () => { },
 };
 
 const ReportContext = createContext<ReportContextType>(defaultContext);
@@ -61,6 +72,8 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
         format: 'html'
     });
     const [datasets, setDatasets] = useState<Dataset[]>([]);
+
+    const historyHook = useHistory([], { title: '', author: '', date: '', format: 'html' });
 
     const findContainer = (
         currentBlocks: ReportBlock[],
@@ -148,7 +161,11 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
             ] : undefined
         };
 
-        setBlocks(prev => insertBlock(prev, newBlock, parentId, columnId));
+        setBlocks(prev => {
+            const next = insertBlock(prev, newBlock, parentId, columnId);
+            historyHook.pushState(next, metadata);
+            return next;
+        });
     };
 
     const updateRecursive = (currentBlocks: ReportBlock[], id: string, updates: Partial<ReportBlock>): ReportBlock[] => {
@@ -170,7 +187,12 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
     };
 
     const updateBlock = (id: string, updates: Partial<ReportBlock>) => {
-        setBlocks(prev => updateRecursive(prev, id, updates));
+        const isContentOnly = Object.keys(updates).length === 1 && 'content' in updates;
+        setBlocks(prev => {
+            const next = updateRecursive(prev, id, updates);
+            historyHook.pushState(next, metadata, isContentOnly);
+            return next;
+        });
     };
 
     const removeRecursive = (currentBlocks: ReportBlock[], id: string): ReportBlock[] => {
@@ -189,7 +211,11 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
     };
 
     const removeBlock = (id: string) => {
-        setBlocks(prev => removeRecursive(prev, id));
+        setBlocks(prev => {
+            const next = removeRecursive(prev, id);
+            historyHook.pushState(next, metadata);
+            return next;
+        });
     };
 
     const moveInList = (list: ReportBlock[], id: string, direction: 'up' | 'down'): ReportBlock[] => {
@@ -227,20 +253,30 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
 
 
     const moveBlock = (id: string, direction: 'up' | 'down') => {
-        setBlocks(prev => moveRecursive(prev, id, direction));
+        setBlocks(prev => {
+            const next = moveRecursive(prev, id, direction);
+            historyHook.pushState(next, metadata);
+            return next;
+        });
     };
 
     const updateBlockOrder = (newBlocks: ReportBlock[]) => {
         setBlocks(newBlocks);
+        historyHook.pushState(newBlocks, metadata);
     };
 
     const loadReport = (newBlocks: ReportBlock[], newMetadata: ReportMetadata) => {
         setBlocks(newBlocks);
         setMetadata(newMetadata);
+        historyHook.resetHistory(newBlocks, newMetadata);
     };
 
     const updateMetadata = (updates: Partial<ReportMetadata>) => {
-        setMetadata(prev => ({ ...prev, ...updates }));
+        setMetadata(prev => {
+            const next = { ...prev, ...updates };
+            historyHook.pushState(blocks, next, true);
+            return next;
+        });
     };
 
     const addDataset = (dataset: Dataset) => {
@@ -252,14 +288,74 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
     };
 
     const resetReport = () => {
+        const emptyMeta: ReportMetadata = { title: '', author: '', date: '', format: 'html' };
         setBlocks([]);
-        setMetadata({
-            title: '',
-            author: '',
-            date: '',
-            format: 'html'
+        setMetadata(emptyMeta);
+        historyHook.resetHistory([], emptyMeta);
+    };
+
+    // Deep clone a block with new IDs
+    const deepCloneBlock = (block: ReportBlock): ReportBlock => {
+        const cloned: ReportBlock = {
+            ...block,
+            id: crypto.randomUUID(),
+            content: block.content,
+            metadata: block.metadata ? JSON.parse(JSON.stringify(block.metadata)) : undefined,
+        };
+        if (block.columns) {
+            cloned.columns = block.columns.map(col => ({
+                id: crypto.randomUUID(),
+                width: col.width,
+                blocks: col.blocks.map(deepCloneBlock),
+            }));
+        }
+        return cloned;
+    };
+
+    const duplicateBlockInList = (currentBlocks: ReportBlock[], id: string): ReportBlock[] => {
+        const result: ReportBlock[] = [];
+        for (const block of currentBlocks) {
+            result.push(block);
+            if (block.id === id) {
+                result.push(deepCloneBlock(block));
+            } else if (block.columns) {
+                // Check if the target is inside this block's columns
+                const updatedBlock = {
+                    ...block,
+                    columns: block.columns.map(col => ({
+                        ...col,
+                        blocks: duplicateBlockInList(col.blocks, id),
+                    })),
+                };
+                result[result.length - 1] = updatedBlock;
+            }
+        }
+        return result;
+    };
+
+    const duplicateBlock = (id: string) => {
+        setBlocks(prev => {
+            const next = duplicateBlockInList(prev, id);
+            historyHook.pushState(next, metadata);
+            return next;
         });
     };
+
+    const undo = useCallback(() => {
+        const entry = historyHook.undo();
+        if (entry) {
+            setBlocks(entry.blocks);
+            setMetadata(entry.metadata);
+        }
+    }, [historyHook]);
+
+    const redo = useCallback(() => {
+        const entry = historyHook.redo();
+        if (entry) {
+            setBlocks(entry.blocks);
+            setMetadata(entry.metadata);
+        }
+    }, [historyHook]);
 
     return (
         <ReportContext.Provider value={{
@@ -267,7 +363,11 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
             addBlock, updateBlock, removeBlock, moveBlock, updateBlockOrder,
             loadReport, updateMetadata,
             datasets, addDataset, removeDataset,
-            resetReport
+            resetReport,
+            undo, redo,
+            canUndo: historyHook.canUndo,
+            canRedo: historyHook.canRedo,
+            duplicateBlock,
         }}>
             {children}
         </ReportContext.Provider>

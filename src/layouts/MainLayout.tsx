@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database, Palette, FilePlus, Library } from 'lucide-react';
+import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database, Palette, FilePlus, Library, Undo2, Redo2, List, Moon, Sun, Monitor } from 'lucide-react';
 import { useReport } from '../contexts/ReportContext';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -11,17 +11,23 @@ interface MainLayoutProps {
     onLoad: (file: File) => void;
     onToggleMetadata?: () => void;
     onToggleDatasets?: () => void;
-
     onToggleStyling?: () => void;
     onToggleExamples?: () => void;
+    onToggleOutline?: () => void;
     onNew: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    theme?: 'light' | 'dark' | 'system';
+    onCycleTheme?: () => void;
 }
 
 export function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs));
 }
 
-export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets, onToggleStyling, onToggleExamples, onNew }: MainLayoutProps) => {
+export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets, onToggleStyling, onToggleExamples, onToggleOutline, onNew, onUndo, onRedo, canUndo, canRedo, theme, onCycleTheme }: MainLayoutProps) => {
     const { viewMode, setViewMode } = useReport();
 
     return (
@@ -66,10 +72,25 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
                             <Library className="w-5 h-5" />
                             <span className="hidden md:inline text-sm font-medium">Examples</span>
                         </button>
+                        <button
+                            onClick={onToggleOutline}
+                            className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-left"
+                        >
+                            <List className="w-5 h-5" />
+                            <span className="hidden md:inline text-sm font-medium">Block Outline</span>
+                        </button>
                     </div>
                 </nav>
 
-                <div className="p-4 border-t border-gray-200 dark:border-gray-800">
+                <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+                    <button
+                        onClick={onCycleTheme}
+                        className="w-full flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors text-left"
+                        title={`Theme: ${theme || 'system'}`}
+                    >
+                        {theme === 'dark' ? <Moon className="w-5 h-5" /> : theme === 'light' ? <Sun className="w-5 h-5" /> : <Monitor className="w-5 h-5" />}
+                        <span className="hidden md:inline text-sm font-medium capitalize">{theme || 'system'}</span>
+                    </button>
                     <button
                         onClick={onExport}
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg shadow-sm hover:shadow transition-all"
@@ -127,7 +148,24 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
                     </div>
 
                     {/* Right Side: Actions */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={onUndo}
+                            disabled={!canUndo}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Undo (Ctrl+Z)"
+                        >
+                            <Undo2 className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={onRedo}
+                            disabled={!canRedo}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Redo (Ctrl+Y)"
+                        >
+                            <Redo2 className="w-4 h-4" />
+                        </button>
+                        <div className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1"></div>
                         <button
                             onClick={onNew}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors"
@@ -143,7 +181,6 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
                                 onChange={(e) => {
                                     if (e.target.files?.[0]) {
                                         onLoad(e.target.files[0]);
-                                        // Reset value to allow re-selecting same file
                                         e.target.value = '';
                                     }
                                 }}
@@ -153,7 +190,7 @@ export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadat
                         <button
                             onClick={onSave}
                             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md text-gray-500 transition-colors"
-                            title="Save Configuration"
+                            title="Save Configuration (Ctrl+S)"
                         >
                             <Save className="w-4 h-4" />
                         </button>

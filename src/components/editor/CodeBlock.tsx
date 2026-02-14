@@ -1,4 +1,4 @@
-
+import { CodeEditor } from './CodeEditor';
 
 interface CodeBlockProps {
     content: string;
@@ -35,6 +35,7 @@ export const CodeBlock = ({ content, language, metadata, onChange, onLanguageCha
     const message = options.message ?? false;
     const warning = options.warning ?? false;
     const output = options.output ?? true;
+    const isDark = document.documentElement.classList.contains('dark');
 
     const updateOption = (key: keyof NonNullable<typeof metadata>['blockOptions'], value: boolean) => {
         onMetadataChange?.({
@@ -71,12 +72,12 @@ export const CodeBlock = ({ content, language, metadata, onChange, onLanguageCha
                 </div>
                 <span className="text-xs text-gray-400 select-none">Code Chunk</span>
             </div>
-            <textarea
+            <CodeEditor
                 value={content}
-                onChange={(e) => onChange(e.target.value)}
-                className="w-full bg-transparent border-none focus:ring-0 p-3 text-gray-800 dark:text-gray-200 resize-y min-h-[100px] outline-none font-mono"
+                onChange={onChange}
+                language={language}
                 placeholder="// Enter code here..."
-                spellCheck={false}
+                darkMode={isDark}
             />
         </div>
     );

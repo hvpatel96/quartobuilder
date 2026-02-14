@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useReport } from '../../contexts/ReportContext';
+import { useToast } from '../../contexts/ToastContext';
 import { X, Upload, Trash2, FileSpreadsheet, Copy } from 'lucide-react';
 import Papa from 'papaparse';
 import type { Dataset } from '../../types';
@@ -11,6 +12,7 @@ interface DatasetPanelProps {
 
 export const DatasetPanel = ({ onClose }: DatasetPanelProps) => {
     const { datasets, addDataset, removeDataset } = useReport();
+    const { addToast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
@@ -44,6 +46,7 @@ export const DatasetPanel = ({ onClose }: DatasetPanelProps) => {
             };
 
             addDataset(newDataset);
+            addToast(`Dataset "${file.name}" uploaded!`, 'success');
         };
 
         if (file.name.endsWith('.xlsx')) {
@@ -129,7 +132,7 @@ export const DatasetPanel = ({ onClose }: DatasetPanelProps) => {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button
-                                            onClick={() => navigator.clipboard.writeText(`data/${dataset.name}`)}
+                                            onClick={() => { navigator.clipboard.writeText(`data/${dataset.name}`); addToast('Path copied to clipboard!', 'info'); }}
                                             className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors"
                                             title="Copy path to clipboard"
                                         >

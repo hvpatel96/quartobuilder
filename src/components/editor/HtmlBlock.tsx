@@ -1,9 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { CodeEditor } from './CodeEditor';
 
-// Reusing the Toggle component logic if I could export it, but for now duplicate the small component or inline it.
-// I'll inline the toggle logic for simplicity or create a small helper function if I can.
-// Actually I'll just copy the BlockOptionToggle component here.
-
+// Reusing the Toggle component logic
 interface BlockOptionToggleProps {
     label: string;
     value: boolean;
@@ -31,12 +28,11 @@ interface HtmlBlockProps {
 }
 
 export const HtmlBlock = ({ content, metadata, onChange, onMetadataChange }: HtmlBlockProps) => {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // Default values: echo=false, output=true (others irrelevant for HTML mostly but user asked for them)
+    // Default values: echo=false, output=true
     const options = metadata?.blockOptions || {};
     const echo = options.echo ?? false;
     const output = options.output ?? true;
+    const isDark = document.documentElement.classList.contains('dark');
 
     const updateOption = (key: string, value: boolean) => {
         onMetadataChange?.({
@@ -47,14 +43,6 @@ export const HtmlBlock = ({ content, metadata, onChange, onMetadataChange }: Htm
             }
         });
     };
-
-    // Auto-resize
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-        }
-    }, [content]);
 
     return (
         <div className="relative group my-2 border border-orange-200 dark:border-orange-800/30 rounded-md overflow-hidden">
@@ -67,14 +55,12 @@ export const HtmlBlock = ({ content, metadata, onChange, onMetadataChange }: Htm
                     </div>
                 </div>
             </div>
-            <textarea
-                ref={textareaRef}
+            <CodeEditor
                 value={content}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={onChange}
+                language="html"
                 placeholder="<div>Type raw HTML here...</div>"
-                className="w-full bg-orange-50/20 dark:bg-orange-900/5 focus:bg-white dark:focus:bg-gray-900 p-3 font-mono text-sm text-gray-800 dark:text-gray-200 resize-none overflow-hidden outline-none"
-                rows={2}
-                spellCheck={false}
+                darkMode={isDark}
             />
         </div>
     );

@@ -1,12 +1,28 @@
 import { useReport } from '../../contexts/ReportContext';
 import { PreviewBlockList } from './PreviewBlockList';
+import { FileText, Globe, FileType } from 'lucide-react';
+
+const formatConfig: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
+    html: { label: 'HTML Preview', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/50', border: 'border-blue-200 dark:border-blue-800', icon: Globe },
+    pdf: { label: 'PDF Preview', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/50', border: 'border-red-200 dark:border-red-800', icon: FileText },
+    docx: { label: 'DOCX Preview', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950/50', border: 'border-green-200 dark:border-green-800', icon: FileType },
+};
 
 export const ReportPreview = () => {
     const { blocks, metadata } = useReport();
+    const fmt = formatConfig[metadata.format] || formatConfig.html;
+    const FmtIcon = fmt.icon;
+    const isPdf = metadata.format === 'pdf';
 
     return (
-        <div className="h-full overflow-y-auto bg-white dark:bg-gray-50 p-8 md:p-12 shadow-sm border-l border-gray-200 dark:border-gray-800">
-            <div className="max-w-4xl mx-auto prose dark:prose-invert max-w-none">
+        <div className="h-full overflow-y-auto bg-white dark:bg-gray-50 p-8 md:p-12 shadow-sm border-l border-gray-200 dark:border-gray-800 relative">
+            {/* Format Badge */}
+            <div className={`sticky top-0 z-10 mb-4 -mt-4 -mx-4 px-4 py-2 flex items-center gap-2 border-b ${fmt.border} ${fmt.bg}`}>
+                <FmtIcon className={`w-4 h-4 ${fmt.color}`} />
+                <span className={`text-xs font-semibold uppercase tracking-wide ${fmt.color}`}>{fmt.label}</span>
+            </div>
+
+            <div className={`max-w-4xl mx-auto prose dark:prose-invert max-w-none ${isPdf ? 'border border-gray-200 dark:border-gray-300 shadow-md p-10 bg-white min-h-[11in]' : ''}`}>
                 {/* Metadata Header (Simulated) */}
                 {(metadata.title || metadata.author || metadata.date) && (
                     <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">

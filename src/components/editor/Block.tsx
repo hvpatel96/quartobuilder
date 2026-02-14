@@ -1,5 +1,5 @@
-import React from 'react';
-import { GripVertical, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { GripVertical, Trash2, ArrowUp, ArrowDown, Copy, ChevronRight, ChevronDown } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { clsx } from 'clsx';
@@ -10,6 +10,7 @@ interface BlockProps {
     onDelete: (id: string) => void;
     onMoveUp: (id: string) => void;
     onMoveDown: (id: string) => void;
+    onDuplicate?: (id: string) => void;
     children: React.ReactNode;
     active?: boolean;
     inColumn?: boolean;
@@ -19,7 +20,7 @@ function cn(...inputs: (string | undefined | null | false)[]) {
     return twMerge(clsx(inputs));
 }
 
-export const Block = ({ id, onDelete, onMoveUp, onMoveDown, children, active, inColumn }: BlockProps) => {
+export const Block = ({ id, onDelete, onMoveUp, onMoveDown, onDuplicate, children, active, inColumn }: BlockProps) => {
     const {
         attributes,
         listeners,
@@ -36,10 +37,13 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, children, active, in
         opacity: isDragging ? 0.5 : 1,
     };
 
+    const [collapsed, setCollapsed] = useState(false);
+
     return (
         <div
             ref={setNodeRef}
             style={style}
+            id={`block-${id}`}
             className={cn(
                 "group relative flex items-start -ml-12 pl-12 pr-4 py-2 rounded-md transition-colors",
                 active ? "bg-blue-50/50 dark:bg-blue-900/10 ring-1 ring-blue-200 dark:ring-blue-800" : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
@@ -64,6 +68,9 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, children, active, in
                         <ArrowDown className="w-3 h-3" />
                     </button>
                     <div className="h-px w-full bg-gray-200 dark:bg-gray-700 my-0.5"></div>
+                    <button onClick={() => onDuplicate?.(id)} className="p-1 text-gray-400 hover:text-green-500" title="Duplicate Block">
+                        <Copy className="w-3 h-3" />
+                    </button>
                     <button onClick={() => onDelete(id)} className="p-1 text-gray-400 hover:text-red-500" title="Delete Block">
                         <Trash2 className="w-3 h-3" />
                     </button>
@@ -72,7 +79,22 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, children, active, in
 
             {/* Block Content */}
             <div className="flex-1 w-full min-w-0">
-                {children}
+                {!inColumn && (
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="absolute top-3 right-2 p-0.5 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        title={collapsed ? 'Expand' : 'Collapse'}
+                    >
+                        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                )}
+                {collapsed ? (
+                    <div className="text-sm text-gray-400 dark:text-gray-500 italic py-1 truncate cursor-pointer" onClick={() => setCollapsed(false)}>
+                        (Collapsed block)
+                    </div>
+                ) : (
+                    children
+                )}
             </div>
 
             {/* Delete button fallback for in-column blocks (optional, or rely on internal controls if any) 
@@ -91,13 +113,22 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, children, active, in
                  I will add a small absolute delete button top-right for in-column blocks.
              */}
             {inColumn && (
-                <button
-                    onClick={() => onDelete(id)}
-                    className="absolute top-2 right-2 p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Delete Block"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={() => onDuplicate?.(id)}
+                        className="p-1 text-gray-300 hover:text-green-500"
+                        title="Duplicate Block"
+                    >
+                        <Copy className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                        onClick={() => onDelete(id)}
+                        className="p-1 text-gray-300 hover:text-red-500"
+                        title="Delete Block"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                </div>
             )}
         </div>
     );
