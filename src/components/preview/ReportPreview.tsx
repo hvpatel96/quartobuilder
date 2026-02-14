@@ -15,7 +15,7 @@ export const ReportPreview = () => {
     const isPdf = metadata.format === 'pdf';
 
     return (
-        <div className="h-full flex flex-col bg-white dark:bg-gray-50 shadow-sm border-l border-gray-200 dark:border-gray-800">
+        <div className="h-full flex flex-col bg-white dark:bg-gray-900 shadow-sm border-l border-gray-200 dark:border-gray-800">
             {/* Format Badge — fixed at top */}
             <div className={`shrink-0 px-4 py-2 flex items-center gap-2 border-b ${fmt.border} ${fmt.bg}`}>
                 <FmtIcon className={`w-4 h-4 ${fmt.color}`} />
