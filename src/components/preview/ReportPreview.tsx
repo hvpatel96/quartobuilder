@@ -15,30 +15,33 @@ export const ReportPreview = () => {
     const isPdf = metadata.format === 'pdf';
 
     return (
-        <div className="h-full overflow-y-auto bg-white dark:bg-gray-50 p-8 md:p-12 shadow-sm border-l border-gray-200 dark:border-gray-800 relative">
-            {/* Format Badge */}
-            <div className={`sticky top-0 z-10 mb-4 -mt-4 -mx-4 px-4 py-2 flex items-center gap-2 border-b ${fmt.border} ${fmt.bg}`}>
+        <div className="h-full flex flex-col bg-white dark:bg-gray-50 shadow-sm border-l border-gray-200 dark:border-gray-800">
+            {/* Format Badge — fixed at top */}
+            <div className={`shrink-0 px-4 py-2 flex items-center gap-2 border-b ${fmt.border} ${fmt.bg}`}>
                 <FmtIcon className={`w-4 h-4 ${fmt.color}`} />
                 <span className={`text-xs font-semibold uppercase tracking-wide ${fmt.color}`}>{fmt.label}</span>
             </div>
 
-            <div className={`max-w-4xl mx-auto prose dark:prose-invert max-w-none ${isPdf ? 'border border-gray-200 dark:border-gray-300 shadow-md p-10 bg-white min-h-[11in]' : ''}`}>
-                {/* Metadata Header (Simulated) */}
-                {(metadata.title || metadata.author || metadata.date) && (
-                    <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">
-                        {metadata.title && <h1 className="mb-2 !mt-0">{metadata.title}</h1>}
-                        {metadata.author && <p className="mb-1 text-gray-600 dark:text-gray-400 font-medium">{metadata.author}</p>}
-                        {metadata.date && <p className="text-sm text-gray-500 dark:text-gray-500">{metadata.date}</p>}
-                    </div>
-                )}
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-8 md:p-12">
+                <div className={`max-w-4xl mx-auto prose dark:prose-invert max-w-none ${isPdf ? 'border border-gray-200 dark:border-gray-300 shadow-md p-10 bg-white min-h-[11in]' : ''}`}>
+                    {/* Metadata Header (Simulated) */}
+                    {(metadata.title || metadata.author || metadata.date) && (
+                        <div className="mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">
+                            {metadata.title && <h1 className="mb-2 !mt-0">{metadata.title}</h1>}
+                            {metadata.author && <p className="mb-1 text-gray-600 dark:text-gray-400 font-medium">{metadata.author}</p>}
+                            {metadata.date && <p className="text-sm text-gray-500 dark:text-gray-500">{metadata.date}</p>}
+                        </div>
+                    )}
 
-                {/* Content */}
-                {metadata.styling?.html?.cssContent && (
-                    <style>
-                        {metadata.styling.html.cssContent}
-                    </style>
-                )}
-                <PreviewBlockList blocks={blocks} />
+                    {/* Content */}
+                    {metadata.styling?.html?.cssContent && (
+                        <style>
+                            {metadata.styling.html.cssContent}
+                        </style>
+                    )}
+                    <PreviewBlockList blocks={blocks} />
+                </div>
             </div>
         </div>
     );
