@@ -65,4 +65,4 @@ The output will be in the `dist` directory.
 
 ## License
 
-[MIT](LICENSE)
+[GNU GPLv3](LICENSE)
