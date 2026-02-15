@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { GripVertical, Trash2, ArrowUp, ArrowDown, Copy, ChevronRight, ChevronDown } from 'lucide-react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../../utils/cn';
 
 interface BlockProps {
     id: string;
@@ -16,9 +15,7 @@ interface BlockProps {
     inColumn?: boolean;
 }
 
-function cn(...inputs: (string | undefined | null | false)[]) {
-    return twMerge(clsx(inputs));
-}
+
 
 export const Block = ({ id, onDelete, onMoveUp, onMoveDown, onDuplicate, children, active, inColumn }: BlockProps) => {
     const {

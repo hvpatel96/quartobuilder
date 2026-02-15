@@ -5,6 +5,7 @@ interface ExecutionContextType {
     runR: (code: string, id: string) => Promise<void>;
     runPython: (code: string, id: string) => Promise<void>;
     writeFile: (filename: string, content: string | ArrayBuffer) => Promise<void>;
+    cancelExecution: (id: string) => void;
     results: Record<string, ExecutionResult[]>;
     isReady: { r: boolean; python: boolean };
     isRunning: Record<string, boolean>;
@@ -29,7 +30,41 @@ export const ExecutionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const rWorker = useRef<Worker | null>(null);
     const pythonWorker = useRef<Worker | null>(null);
 
+    // Track which block id maps to which language so cancel knows which worker to terminate
+    const runningBlockLang = useRef<Record<string, 'r' | 'python'>>({});
+
     useEffect(() => {
+        // Handler defined inside useEffect to avoid stale closure / missing dependency issues
+        const handleWorkerMessage = (e: MessageEvent<WorkerResponse>, lang: 'r' | 'python') => {
+            const { type } = e.data;
+
+            if (type === 'loaded') {
+                setIsReady(prev => ({ ...prev, [lang]: true }));
+            } else if (type === 'output' && e.data.id) {
+                const { id, result } = e.data;
+                setResults(prev => ({
+                    ...prev,
+                    [id]: [...(prev[id] || []), result]
+                }));
+            } else if (type === 'complete' && e.data.id) {
+                const { id } = e.data;
+                setIsRunning(prev => ({ ...prev, [id]: false }));
+                delete runningBlockLang.current[id];
+            } else if (type === 'error') {
+                const { id, error } = e.data;
+                if (id) {
+                    setResults(prev => ({
+                        ...prev,
+                        [id]: [...(prev[id] || []), { type: 'text', content: `Error: ${error}` }]
+                    }));
+                    setIsRunning(prev => ({ ...prev, [id]: false }));
+                    delete runningBlockLang.current[id];
+                } else {
+                    console.error(`Worker error (${lang}):`, error);
+                }
+            }
+        };
+
         // Initialize R Worker
         rWorker.current = new Worker(new URL('../services/execution/r-worker.ts', import.meta.url), { type: 'module' });
         rWorker.current.onmessage = (e: MessageEvent<WorkerResponse>) => handleWorkerMessage(e, 'r');
@@ -46,38 +81,11 @@ export const ExecutionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         };
     }, []);
 
-    const handleWorkerMessage = useCallback((e: MessageEvent<WorkerResponse>, lang: 'r' | 'python') => {
-        const { type } = e.data;
-
-        if (type === 'loaded') {
-            setIsReady(prev => ({ ...prev, [lang]: true }));
-        } else if (type === 'output' && e.data.id) {
-            const { id, result } = e.data;
-            setResults(prev => ({
-                ...prev,
-                [id]: [...(prev[id] || []), result]
-            }));
-        } else if (type === 'complete' && e.data.id) {
-            const { id } = e.data;
-            setIsRunning(prev => ({ ...prev, [id]: false }));
-        } else if (type === 'error') {
-            const { id, error } = e.data;
-            if (id) {
-                setResults(prev => ({
-                    ...prev,
-                    [id]: [...(prev[id] || []), { type: 'text', content: `Error: ${error}` }]
-                }));
-                setIsRunning(prev => ({ ...prev, [id]: false }));
-            } else {
-                console.error(`Worker error (${lang}):`, error);
-            }
-        }
-    }, []);
-
     const runR = useCallback(async (code: string, id: string) => {
         if (!rWorker.current || !isReady.r) return;
         setIsRunning(prev => ({ ...prev, [id]: true }));
         setResults(prev => ({ ...prev, [id]: [] }));
+        runningBlockLang.current[id] = 'r';
         rWorker.current.postMessage({ type: 'run', code, id });
     }, [isReady.r]);
 
@@ -85,17 +93,67 @@ export const ExecutionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (!pythonWorker.current || !isReady.python) return;
         setIsRunning(prev => ({ ...prev, [id]: true }));
         setResults(prev => ({ ...prev, [id]: [] }));
+        runningBlockLang.current[id] = 'python';
         pythonWorker.current.postMessage({ type: 'run', code, id });
     }, [isReady.python]);
 
+    const createWorkerHandler = useCallback((lang: 'r' | 'python') => {
+        return (e: MessageEvent<WorkerResponse>) => {
+            const data = e.data;
+            if (data.type === 'loaded') {
+                setIsReady(prev => ({ ...prev, [lang]: true }));
+            } else if (data.type === 'output' && data.id) {
+                setResults(prev => ({
+                    ...prev,
+                    [data.id!]: [...(prev[data.id!] || []), data.result]
+                }));
+            } else if (data.type === 'complete' && data.id) {
+                setIsRunning(prev => ({ ...prev, [data.id!]: false }));
+                delete runningBlockLang.current[data.id!];
+            } else if (data.type === 'error' && data.id) {
+                setResults(prev => ({
+                    ...prev,
+                    [data.id!]: [...(prev[data.id!] || []), { type: 'text' as const, content: `Error: ${data.error}` }]
+                }));
+                setIsRunning(prev => ({ ...prev, [data.id!]: false }));
+                delete runningBlockLang.current[data.id!];
+            }
+        };
+    }, []);
+
+    const cancelExecution = useCallback((id: string) => {
+        const lang = runningBlockLang.current[id];
+        if (!lang) return;
+
+        // Terminate the worker and spawn a fresh one
+        if (lang === 'r' && rWorker.current) {
+            rWorker.current.terminate();
+            rWorker.current = new Worker(new URL('../services/execution/r-worker.ts', import.meta.url), { type: 'module' });
+            rWorker.current.onmessage = createWorkerHandler('r');
+            setIsReady(prev => ({ ...prev, r: false }));
+            rWorker.current.postMessage({ type: 'init' });
+        } else if (lang === 'python' && pythonWorker.current) {
+            pythonWorker.current.terminate();
+            pythonWorker.current = new Worker(new URL('../services/execution/python-worker.ts', import.meta.url), { type: 'module' });
+            pythonWorker.current.onmessage = createWorkerHandler('python');
+            setIsReady(prev => ({ ...prev, python: false }));
+            pythonWorker.current.postMessage({ type: 'init' });
+        }
+
+        // Mark block as cancelled
+        setIsRunning(prev => ({ ...prev, [id]: false }));
+        setResults(prev => ({
+            ...prev,
+            [id]: [...(prev[id] || []), { type: 'text', content: '⚠️ Execution cancelled' }]
+        }));
+        delete runningBlockLang.current[id];
+    }, [createWorkerHandler]);
+
     const writeFile = useCallback(async (filename: string, content: string | ArrayBuffer) => {
-        // Broadcast to both workers if they are running
         if (rWorker.current) {
             rWorker.current.postMessage({ type: 'writeFile', filename, content });
         }
         if (pythonWorker.current) {
-            // If binary, we might need to transfer or copy. 
-            // postMessage structures structured clone, which handles ArrayBuffer.
             pythonWorker.current.postMessage({ type: 'writeFile', filename, content });
         }
     }, []);
@@ -109,7 +167,7 @@ export const ExecutionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, []);
 
     return (
-        <ExecutionContext.Provider value={{ runR, runPython, writeFile, results, isReady, isRunning, clearResults }}>
+        <ExecutionContext.Provider value={{ runR, runPython, writeFile, cancelExecution, results, isReady, isRunning, clearResults }}>
             {children}
         </ExecutionContext.Provider>
     );

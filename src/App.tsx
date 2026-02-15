@@ -10,6 +10,7 @@ import { DatasetPanel } from './components/editor/DatasetPanel';
 import { StylingPanel } from './components/metadata/StylingPanel';
 import { ExamplesPanel } from './components/examples/ExamplesPanel';
 import { BlockOutlinePanel } from './components/editor/BlockOutlinePanel';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { exportReport } from './utils/exportManager';
 import { saveConfiguration, loadConfiguration } from './utils/storageManager';
 import { clsx } from 'clsx';
@@ -18,20 +19,53 @@ import { useAutosave, getAutosaveData, clearAutosave } from './hooks/useAutosave
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './hooks/useTheme';
 
+type PanelName = 'metadata' | 'datasets' | 'styling' | 'examples' | 'outline';
+
 function MainContent() {
   const { blocks, metadata, viewMode, loadReport, datasets, resetReport, undo, redo, canUndo, canRedo } = useReport();
   const { addToast } = useToast();
-  const [showMetadata, setShowMetadata] = useState(false);
-  const [showDatasets, setShowDatasets] = useState(false);
-  const [showStyling, setShowStyling] = useState(false);
-  const [showExamples, setShowExamples] = useState(false);
-  const [showOutline, setShowOutline] = useState(false);
+
+  // Single activePanel state replaces 5 separate booleans
+  const [activePanel, setActivePanel] = useState<PanelName | null>(null);
+  const togglePanel = useCallback((name: PanelName) => {
+    // Outline is modal, so it can coexist with others; all others are mutually exclusive
+    if (name === 'outline') {
+      setActivePanel(prev => prev === 'outline' ? null : 'outline');
+    } else {
+      setActivePanel(prev => prev === name ? null : name);
+    }
+  }, []);
+
   const [showRestoreBanner, setShowRestoreBanner] = useState(false);
   const [autosaveTimestamp, setAutosaveTimestamp] = useState<string | null>(null);
   const { theme, cycleTheme } = useTheme();
 
+  // Track whether the report has unsaved changes
+  const hasUnsavedRef = useRef(false);
+
   // Autosave
   useAutosave(blocks, metadata, datasets);
+
+  // Mark as dirty whenever content changes (after initial mount)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    hasUnsavedRef.current = true;
+  }, [blocks, metadata]);
+
+  // beforeunload warning for unsaved changes
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedRef.current) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   // Check for existing autosave on mount
   useEffect(() => {
@@ -67,6 +101,7 @@ function MainContent() {
 
   const handleSave = useCallback(() => {
     saveConfiguration(blocks, metadata);
+    hasUnsavedRef.current = false;
     addToast('Configuration saved!', 'success');
   }, [blocks, metadata, addToast]);
 
@@ -74,6 +109,7 @@ function MainContent() {
     try {
       const config = await loadConfiguration(file);
       loadReport(config.blocks, config.metadata);
+      hasUnsavedRef.current = false;
       addToast('Configuration loaded!', 'success');
     } catch (error) {
       console.error("Failed to load configuration", error);
@@ -84,6 +120,7 @@ function MainContent() {
   const handleNew = () => {
     if (confirm("Are you sure you want to create a new report? Unsaved changes will be lost.")) {
       resetReport();
+      hasUnsavedRef.current = false;
     }
   };
 
@@ -106,11 +143,11 @@ function MainContent() {
       onLoad={handleLoad}
       onNew={handleNew}
 
-      onToggleMetadata={() => { setShowMetadata(!showMetadata); setShowDatasets(false); setShowStyling(false); setShowExamples(false); }}
-      onToggleDatasets={() => { setShowDatasets(!showDatasets); setShowMetadata(false); setShowStyling(false); setShowExamples(false); }}
-      onToggleStyling={() => { setShowStyling(!showStyling); setShowMetadata(false); setShowDatasets(false); setShowExamples(false); }}
-      onToggleExamples={() => { setShowExamples(!showExamples); setShowMetadata(false); setShowDatasets(false); setShowStyling(false); }}
-      onToggleOutline={() => setShowOutline(!showOutline)}
+      onToggleMetadata={() => togglePanel('metadata')}
+      onToggleDatasets={() => togglePanel('datasets')}
+      onToggleStyling={() => togglePanel('styling')}
+      onToggleExamples={() => togglePanel('examples')}
+      onToggleOutline={() => togglePanel('outline')}
       onUndo={undo}
       onRedo={redo}
       canUndo={canUndo}
@@ -144,11 +181,11 @@ function MainContent() {
         "h-full w-full transition-all duration-300",
         viewMode === 'split' ? "flex gap-4" : "max-w-4xl mx-auto"
       )}>
-        {showMetadata && <MetadataPanel onClose={() => setShowMetadata(false)} />}
-        {showDatasets && <DatasetPanel onClose={() => setShowDatasets(false)} />}
-        {showStyling && <StylingPanel isOpen={showStyling} onClose={() => setShowStyling(false)} />}
-        {showExamples && <ExamplesPanel onClose={() => setShowExamples(false)} />}
-        {showOutline && <BlockOutlinePanel onClose={() => setShowOutline(false)} />}
+        {activePanel === 'metadata' && <MetadataPanel onClose={() => setActivePanel(null)} />}
+        {activePanel === 'datasets' && <DatasetPanel onClose={() => setActivePanel(null)} />}
+        {activePanel === 'styling' && <StylingPanel isOpen={true} onClose={() => setActivePanel(null)} />}
+        {activePanel === 'examples' && <ExamplesPanel onClose={() => setActivePanel(null)} />}
+        {activePanel === 'outline' && <BlockOutlinePanel onClose={() => setActivePanel(null)} />}
 
         {/* Editor Pane */}
         {(viewMode === 'edit' || viewMode === 'split') && (
@@ -158,7 +195,9 @@ function MainContent() {
               ? "h-full overflow-y-auto bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 py-6 pr-6 pl-14"
               : "bg-white dark:bg-gray-900 min-h-[800px] shadow-sm rounded-xl border border-gray-200 dark:border-gray-800 py-8 pr-8 pl-14 md:p-12 mb-20"
           )}>
-            <ReportEditor />
+            <ErrorBoundary>
+              <ReportEditor />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -168,7 +207,9 @@ function MainContent() {
             "flex-1 min-w-0 transition-all duration-300",
             viewMode === 'split' ? "h-full overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm" : ""
           )}>
-            <ReportPreview />
+            <ErrorBoundary>
+              <ReportPreview />
+            </ErrorBoundary>
           </div>
         )}
       </div>

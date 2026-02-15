@@ -1,5 +1,5 @@
 import { useExecution } from '../../contexts/ExecutionContext';
-import { Play, Loader2 } from 'lucide-react';
+import { Play, Loader2, Square } from 'lucide-react';
 import { clsx } from 'clsx';
 
 interface ExecutionOutputProps {
@@ -10,7 +10,7 @@ interface ExecutionOutputProps {
 }
 
 export const ExecutionOutput = ({ blockId, code, language, showOutput = true }: ExecutionOutputProps) => {
-    const { runR, runPython, results, isRunning, isReady } = useExecution();
+    const { runR, runPython, cancelExecution, results, isRunning, isReady } = useExecution();
     const blockResults = results[blockId] || [];
     const running = isRunning[blockId];
 
@@ -24,6 +24,10 @@ export const ExecutionOutput = ({ blockId, code, language, showOutput = true }: 
         } else if (language === 'python') {
             await runPython(code, blockId);
         }
+    };
+
+    const handleCancel = () => {
+        cancelExecution(blockId);
     };
 
     if (!showOutput) return null;
@@ -50,6 +54,17 @@ export const ExecutionOutput = ({ blockId, code, language, showOutput = true }: 
                     )}
                     {running ? "Running..." : "Run"}
                 </button>
+
+                {running && (
+                    <button
+                        onClick={handleCancel}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 transition-colors"
+                        title="Cancel execution"
+                    >
+                        <Square className="w-3 h-3 fill-current" />
+                        Cancel
+                    </button>
+                )}
 
                 {!ready && (
                     <span className="text-xs text-gray-400 flex items-center gap-1">

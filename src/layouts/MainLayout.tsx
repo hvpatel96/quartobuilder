@@ -1,8 +1,7 @@
 import type { ReactNode } from 'react';
 import { FileText, Download, Save, Settings, Eye, LayoutTemplate, PenTool, FolderOpen, Database, Palette, FilePlus, Library, Undo2, Redo2, List, Moon, Sun, Monitor } from 'lucide-react';
 import { useReport } from '../contexts/ReportContext';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { cn } from '../utils/cn';
 
 interface MainLayoutProps {
     children: ReactNode;
@@ -21,10 +20,6 @@ interface MainLayoutProps {
     canRedo?: boolean;
     theme?: 'light' | 'dark' | 'system';
     onCycleTheme?: () => void;
-}
-
-export function cn(...inputs: (string | undefined | null | false)[]) {
-    return twMerge(clsx(inputs));
 }
 
 export const MainLayout = ({ children, onExport, onSave, onLoad, onToggleMetadata, onToggleDatasets, onToggleStyling, onToggleExamples, onToggleOutline, onNew, onUndo, onRedo, canUndo, canRedo, theme, onCycleTheme }: MainLayoutProps) => {
