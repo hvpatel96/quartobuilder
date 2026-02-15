@@ -35,20 +35,30 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, onDuplicate, childre
     };
 
     const [collapsed, setCollapsed] = useState(false);
+    const [showControls, setShowControls] = useState(false);
 
     return (
         <div
             ref={setNodeRef}
             style={style}
             id={`block-${id}`}
+            onMouseEnter={() => setShowControls(true)}
+            onMouseLeave={() => setShowControls(false)}
             className={cn(
-                "group relative flex items-start -ml-12 pl-12 pr-4 py-2 rounded-md transition-colors",
+                "relative flex items-start -ml-12 pl-12 pr-4 py-2 rounded-md transition-colors",
                 active ? "bg-blue-50/50 dark:bg-blue-900/10 ring-1 ring-blue-200 dark:ring-blue-800" : "hover:bg-gray-50 dark:hover:bg-gray-800/50"
             )}
         >
             {/* Controls Container - Hidden in columns */}
             {!inColumn && (
-                <div className="absolute left-0 top-2 flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm z-10 w-10">
+                <div
+                    onMouseEnter={() => setShowControls(true)}
+                    onMouseLeave={() => setShowControls(false)}
+                    className={cn(
+                        "absolute left-0 top-2 flex flex-col items-center gap-1 transition-opacity p-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm z-20 w-10",
+                        showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    )}
+                >
                     <button
                         className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-grab active:cursor-grabbing"
                         title="Drag to move"
@@ -79,7 +89,10 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, onDuplicate, childre
                 {!inColumn && (
                     <button
                         onClick={() => setCollapsed(!collapsed)}
-                        className="absolute top-3 right-2 p-0.5 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                        className={cn(
+                            "absolute top-3 right-2 p-0.5 text-gray-300 hover:text-gray-500 dark:hover:text-gray-400 transition-opacity z-10",
+                            showControls ? 'opacity-100' : 'opacity-0'
+                        )}
                         title={collapsed ? 'Expand' : 'Collapse'}
                     >
                         {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -110,7 +123,10 @@ export const Block = ({ id, onDelete, onMoveUp, onMoveDown, onDuplicate, childre
                  I will add a small absolute delete button top-right for in-column blocks.
              */}
             {inColumn && (
-                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className={cn(
+                    "absolute top-2 right-2 flex items-center gap-1 transition-opacity",
+                    showControls ? 'opacity-100' : 'opacity-0'
+                )}>
                     <button
                         onClick={() => onDuplicate?.(id)}
                         className="p-1 text-gray-300 hover:text-green-500"

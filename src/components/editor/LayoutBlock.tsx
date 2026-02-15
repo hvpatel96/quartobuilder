@@ -121,7 +121,7 @@ export const LayoutBlock = ({ block }: LayoutBlockProps) => {
                                     type="number"
                                     value={col.width}
                                     onChange={(e) => updateColumnWidth(col.id, Number(e.target.value))}
-                                    className="w-10 text-right text-xs border border-gray-200 dark:border-gray-700 rounded px-1 py-0.5 bg-transparent"
+                                    className="w-16 text-center text-xs border border-gray-200 dark:border-gray-700 rounded px-1 py-0.5 bg-transparent"
                                     min={1}
                                     max={100}
                                 />
