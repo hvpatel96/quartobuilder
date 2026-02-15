@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useReport } from '../contexts/ReportContext';
 import { useExecution } from '../contexts/ExecutionContext';
+import { getDatasetContent } from '../utils/datasetStorage';
 
 export const DatasetSync = () => {
     const { datasets } = useReport();
@@ -14,8 +15,14 @@ export const DatasetSync = () => {
 
             for (const dataset of datasets) {
                 try {
-                    await writeFile(dataset.name, dataset.content);
-                    console.log(`Synced ${dataset.name}`);
+                    // Read content from IndexedDB
+                    const content = await getDatasetContent(dataset.id);
+                    if (content) {
+                        await writeFile(dataset.name, content);
+                        console.log(`Synced ${dataset.name}`);
+                    } else {
+                        console.warn(`No content found in IndexedDB for ${dataset.name}`);
+                    }
                 } catch (err) {
                     console.error(`Failed to sync ${dataset.name}`, err);
                 }

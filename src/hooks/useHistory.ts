@@ -28,7 +28,7 @@ export function useHistory(initialBlocks: ReportBlock[], initialMetadata: Report
             setHistory(prev => {
                 // Discard any future states after the current pointer
                 const newHistory = prev.slice(0, currentPointer + 1);
-                newHistory.push({ blocks: JSON.parse(JSON.stringify(blocks)), metadata: JSON.parse(JSON.stringify(metadata)) });
+                newHistory.push({ blocks: structuredClone(blocks), metadata: structuredClone(metadata) });
                 // Cap at MAX_HISTORY
                 if (newHistory.length > MAX_HISTORY) {
                     newHistory.shift();
@@ -62,7 +62,7 @@ export function useHistory(initialBlocks: ReportBlock[], initialMetadata: Report
         const newPointer = currentPointer - 1;
         setPointer(newPointer);
         const entry = currentHistory[newPointer];
-        return { blocks: JSON.parse(JSON.stringify(entry.blocks)), metadata: JSON.parse(JSON.stringify(entry.metadata)) };
+        return { blocks: structuredClone(entry.blocks), metadata: structuredClone(entry.metadata) };
     }, []);
 
     const redo = useCallback((): HistoryEntry | null => {
@@ -72,7 +72,7 @@ export function useHistory(initialBlocks: ReportBlock[], initialMetadata: Report
         const newPointer = currentPointer + 1;
         setPointer(newPointer);
         const entry = currentHistory[newPointer];
-        return { blocks: JSON.parse(JSON.stringify(entry.blocks)), metadata: JSON.parse(JSON.stringify(entry.metadata)) };
+        return { blocks: structuredClone(entry.blocks), metadata: structuredClone(entry.metadata) };
     }, []);
 
     const resetHistory = useCallback((blocks: ReportBlock[], metadata: ReportMetadata) => {
@@ -80,7 +80,7 @@ export function useHistory(initialBlocks: ReportBlock[], initialMetadata: Report
             clearTimeout(debounceTimer.current);
             debounceTimer.current = null;
         }
-        setHistory([{ blocks: JSON.parse(JSON.stringify(blocks)), metadata: JSON.parse(JSON.stringify(metadata)) }]);
+        setHistory([{ blocks: structuredClone(blocks), metadata: structuredClone(metadata) }]);
         setPointer(0);
     }, []);
 

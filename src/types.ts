@@ -44,7 +44,10 @@ export interface Dataset {
     id: string;
     name: string; // "data.csv"
     type: 'csv' | 'excel' | 'tsv' | 'json';
-    content: string | ArrayBuffer; // Base64 or raw for export
+    content?: string | ArrayBuffer; // Stored in IndexedDB, only present during upload
     preview: any[]; // First ~5 rows for preview
     size: number;
 }
+
+/** Dataset without content — what lives in React state and localStorage. */
+export type DatasetMeta = Omit<Dataset, 'content'>;

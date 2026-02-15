@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { ReportBlock, BlockType, ReportMetadata, Dataset } from '../types';
 import { useHistory } from '../hooks/useHistory';
+import { saveDatasetContent, deleteDatasetContent, clearAllDatasetContent } from '../utils/datasetStorage';
 
 interface ReportContextType {
     blocks: ReportBlock[];
@@ -280,10 +281,21 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
     };
 
     const addDataset = (dataset: Dataset) => {
-        setDatasets(prev => [...prev, dataset]);
+        // Save content to IndexedDB, then store metadata-only in React state
+        if (dataset.content !== undefined) {
+            saveDatasetContent(dataset.id, dataset.content).catch(err =>
+                console.error('Failed to save dataset content to IndexedDB:', err)
+            );
+        }
+        // Strip content from React state — it lives in IndexedDB now
+        const { content: _content, ...meta } = dataset;
+        setDatasets(prev => [...prev, meta as Dataset]);
     };
 
     const removeDataset = (id: string) => {
+        deleteDatasetContent(id).catch(err =>
+            console.error('Failed to delete dataset content from IndexedDB:', err)
+        );
         setDatasets(prev => prev.filter(d => d.id !== id));
     };
 
@@ -291,6 +303,10 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
         const emptyMeta: ReportMetadata = { title: '', author: '', date: '', format: 'html' };
         setBlocks([]);
         setMetadata(emptyMeta);
+        setDatasets([]);
+        clearAllDatasetContent().catch(err =>
+            console.error('Failed to clear dataset content from IndexedDB:', err)
+        );
         historyHook.resetHistory([], emptyMeta);
     };
 
@@ -300,7 +316,7 @@ export const ReportProvider = ({ children }: ReportProviderProps) => {
             ...block,
             id: crypto.randomUUID(),
             content: block.content,
-            metadata: block.metadata ? JSON.parse(JSON.stringify(block.metadata)) : undefined,
+            metadata: block.metadata ? structuredClone(block.metadata) : undefined,
         };
         if (block.columns) {
             cloned.columns = block.columns.map(col => ({

@@ -1,4 +1,5 @@
 import { CodeEditor } from './CodeEditor';
+import { useTheme } from '../../hooks/useTheme';
 
 interface CodeBlockProps {
     content: string;
@@ -29,13 +30,15 @@ const BlockOptionToggle = ({ label, value, onChange }: BlockOptionToggleProps) =
 );
 
 export const CodeBlock = ({ content, language, metadata, onChange, onLanguageChange, onMetadataChange }: CodeBlockProps) => {
+    const { theme } = useTheme();
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
     // Default values if undefined: echo=false, message=false, warning=false, output=true
     const options = metadata?.blockOptions || {};
     const echo = options.echo ?? false;
     const message = options.message ?? false;
     const warning = options.warning ?? false;
     const output = options.output ?? true;
-    const isDark = document.documentElement.classList.contains('dark');
 
     const updateOption = (key: keyof NonNullable<typeof metadata>['blockOptions'], value: boolean) => {
         onMetadataChange?.({
@@ -58,8 +61,8 @@ export const CodeBlock = ({ content, language, metadata, onChange, onLanguageCha
                     >
                         <option value="r">R</option>
                         <option value="python">Python</option>
-                        <option value="bash">Bash</option>
-                        <option value="markdown">Raw</option>
+                        {/* <option value="bash">Bash</option> */}
+                        {/* <option value="markdown">Raw</option> */}
                     </select>
 
                     {/* Toggles */}

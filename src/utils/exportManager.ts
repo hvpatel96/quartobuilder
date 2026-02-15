@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import type { ReportBlock, ReportMetadata, Dataset } from '../types';
+import { getDatasetContent } from './datasetStorage';
 
 // generateYAML moved inside exportReport to access styling options
 
@@ -55,15 +56,16 @@ format:
 
     let qmdContent = generateStylingYAML();
 
-    // Save Datasets
+    // Save Datasets (read content from IndexedDB)
     if (dataFolder && datasets.length > 0) {
-        datasets.forEach(dataset => {
-            if (typeof dataset.content === 'string') {
-                dataFolder.file(dataset.name, dataset.content);
+        for (const dataset of datasets) {
+            const content = await getDatasetContent(dataset.id);
+            if (content) {
+                dataFolder.file(dataset.name, content);
             } else {
-                dataFolder.file(dataset.name, dataset.content);
+                console.warn(`No content found in IndexedDB for dataset "${dataset.name}", skipping`);
             }
-        });
+        }
     }
 
     // Recursive function to process blocks

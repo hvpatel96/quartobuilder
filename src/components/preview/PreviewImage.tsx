@@ -5,6 +5,8 @@ interface PreviewImageProps {
 }
 
 export const PreviewImage = ({ content, caption }: PreviewImageProps) => {
+    if (!content) return null;
+
     return (
         <figure className="my-6">
             <img
