@@ -1,11 +1,19 @@
+import { useMemo } from 'react';
 import { useReport } from '../../contexts/ReportContext';
 import { PreviewBlockList } from './PreviewBlockList';
 import { FileText, Globe, FileType } from 'lucide-react';
+import { sanitizeCSS } from '../../utils/sanitizeCSS';
 
 const formatConfig: Record<string, { label: string; color: string; bg: string; border: string; icon: any }> = {
     html: { label: 'HTML Preview', color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950/50', border: 'border-blue-200 dark:border-blue-800', icon: Globe },
     pdf: { label: 'PDF Preview', color: 'text-red-600', bg: 'bg-red-50 dark:bg-red-950/50', border: 'border-red-200 dark:border-red-800', icon: FileText },
     docx: { label: 'DOCX Preview', color: 'text-green-600', bg: 'bg-green-50 dark:bg-green-950/50', border: 'border-green-200 dark:border-green-800', icon: FileType },
+};
+
+/** Sanitizes user CSS and renders it in a style tag, memoized to avoid re-sanitizing on every render */
+const SafeStyle = ({ css }: { css: string }) => {
+    const safeCss = useMemo(() => sanitizeCSS(css), [css]);
+    return <style>{safeCss}</style>;
 };
 
 export const ReportPreview = () => {
@@ -34,11 +42,9 @@ export const ReportPreview = () => {
                         </div>
                     )}
 
-                    {/* Content */}
+                    {/* Content — sanitize user CSS to prevent XSS / data exfiltration */}
                     {metadata.styling?.html?.cssContent && (
-                        <style>
-                            {metadata.styling.html.cssContent}
-                        </style>
+                        <SafeStyle css={metadata.styling.html.cssContent} />
                     )}
                     <PreviewBlockList blocks={blocks} />
                 </div>

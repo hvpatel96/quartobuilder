@@ -13,25 +13,31 @@ export function useHistory(initialBlocks: ReportBlock[], initialMetadata: Report
     const [pointer, setPointer] = useState(0);
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+    // Refs to avoid stale closure issues — always hold the latest values
+    const historyRef = useRef(history);
+    historyRef.current = history;
+    const pointerRef = useRef(pointer);
+    pointerRef.current = pointer;
+
     const canUndo = pointer > 0;
     const canRedo = pointer < history.length - 1;
 
     const pushState = useCallback((blocks: ReportBlock[], metadata: ReportMetadata, debounce = false) => {
         const commitEntry = () => {
+            const currentPointer = pointerRef.current;
             setHistory(prev => {
                 // Discard any future states after the current pointer
-                const newHistory = prev.slice(0, pointer + 1);
+                const newHistory = prev.slice(0, currentPointer + 1);
                 newHistory.push({ blocks: JSON.parse(JSON.stringify(blocks)), metadata: JSON.parse(JSON.stringify(metadata)) });
                 // Cap at MAX_HISTORY
                 if (newHistory.length > MAX_HISTORY) {
                     newHistory.shift();
-                    return newHistory;
                 }
                 return newHistory;
             });
             setPointer(prev => {
-                // We need to account for potential shift
-                return Math.min(prev + 1, MAX_HISTORY - 1);
+                const currentLen = pointerRef.current + 2; // after push, length = pointer + 2
+                return Math.min(prev + 1, currentLen > MAX_HISTORY ? MAX_HISTORY - 1 : prev + 1);
             });
         };
 
@@ -47,23 +53,27 @@ export function useHistory(initialBlocks: ReportBlock[], initialMetadata: Report
             }
             commitEntry();
         }
-    }, [pointer]);
+    }, []); // No dependencies needed — uses refs for mutable state
 
     const undo = useCallback((): HistoryEntry | null => {
-        if (!canUndo) return null;
-        const newPointer = pointer - 1;
+        const currentPointer = pointerRef.current;
+        const currentHistory = historyRef.current;
+        if (currentPointer <= 0) return null;
+        const newPointer = currentPointer - 1;
         setPointer(newPointer);
-        const entry = history[newPointer];
+        const entry = currentHistory[newPointer];
         return { blocks: JSON.parse(JSON.stringify(entry.blocks)), metadata: JSON.parse(JSON.stringify(entry.metadata)) };
-    }, [canUndo, pointer, history]);
+    }, []);
 
     const redo = useCallback((): HistoryEntry | null => {
-        if (!canRedo) return null;
-        const newPointer = pointer + 1;
+        const currentPointer = pointerRef.current;
+        const currentHistory = historyRef.current;
+        if (currentPointer >= currentHistory.length - 1) return null;
+        const newPointer = currentPointer + 1;
         setPointer(newPointer);
-        const entry = history[newPointer];
+        const entry = currentHistory[newPointer];
         return { blocks: JSON.parse(JSON.stringify(entry.blocks)), metadata: JSON.parse(JSON.stringify(entry.metadata)) };
-    }, [canRedo, pointer, history]);
+    }, []);
 
     const resetHistory = useCallback((blocks: ReportBlock[], metadata: ReportMetadata) => {
         if (debounceTimer.current) {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ReportProvider, useReport } from './contexts/ReportContext';
 import { ExecutionProvider } from './contexts/ExecutionContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
@@ -55,7 +55,7 @@ function MainContent() {
     setShowRestoreBanner(false);
   };
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     try {
       await exportReport(blocks, metadata, datasets);
       addToast('Report exported successfully!', 'success');
@@ -63,12 +63,12 @@ function MainContent() {
       console.error("Export failed:", error);
       addToast('Failed to export report.', 'error');
     }
-  };
+  }, [blocks, metadata, datasets, addToast]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     saveConfiguration(blocks, metadata);
     addToast('Configuration saved!', 'success');
-  };
+  }, [blocks, metadata, addToast]);
 
   const handleLoad = async (file: File) => {
     try {
@@ -87,14 +87,17 @@ function MainContent() {
     }
   };
 
-  // Keyboard shortcuts
-  const shortcutActions = useMemo(() => ({
-    onUndo: undo,
-    onRedo: redo,
-    onSave: handleSave,
-    onExport: handleExport,
-  }), [undo, redo, handleSave, handleExport]);
-  useKeyboardShortcuts(shortcutActions);
+  // Keyboard shortcuts — use refs for stable action references to avoid re-registering listeners
+  const actionsRef = useRef({ onUndo: undo, onRedo: redo, onSave: handleSave, onExport: handleExport });
+  actionsRef.current = { onUndo: undo, onRedo: redo, onSave: handleSave, onExport: handleExport };
+
+  const stableActions = useRef({
+    onUndo: () => actionsRef.current.onUndo(),
+    onRedo: () => actionsRef.current.onRedo(),
+    onSave: () => actionsRef.current.onSave(),
+    onExport: () => actionsRef.current.onExport(),
+  });
+  useKeyboardShortcuts(stableActions.current);
 
   return (
     <MainLayout
