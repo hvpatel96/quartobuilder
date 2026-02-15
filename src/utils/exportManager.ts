@@ -29,25 +29,28 @@ export const exportReport = async (blocks: ReportBlock[], metadata: ReportMetada
 
     // 2. Generate YAML with styling options
     const generateStylingYAML = () => {
-        let yaml = `---
-title: "${escapeYaml(metadata.title)}"
-author: "${escapeYaml(metadata.author)}"
-date: "${escapeYaml(metadata.date)}"
-format: 
-  ${metadata.format}:
-`;
-        // Indent sub-options
+        // Collect format sub-options
+        const formatOptions: string[] = [];
+
         if (metadata.format === 'html') {
             if (cssFileName) {
-                yaml += `    css: www/${cssFileName}\n`;
+                formatOptions.push(`    css: www/${cssFileName}`);
             }
         } else if (metadata.format === 'pdf') {
-            if (pdfStyle.toc) yaml += `    toc: true\n`;
-            if (pdfStyle.numberSections) yaml += `    number-sections: true\n`;
+            if (pdfStyle.toc) formatOptions.push(`    toc: true`);
+            if (pdfStyle.numberSections) formatOptions.push(`    number-sections: true`);
             if (pdfStyle.margin) {
                 const safeMargin = pdfStyle.margin.replace(/[^a-zA-Z0-9.,\s]/g, '');
-                yaml += `    geometry: margin=${safeMargin}\n`;
+                formatOptions.push(`    geometry: margin=${safeMargin}`);
             }
+        }
+
+        let yaml = `---\ntitle: "${escapeYaml(metadata.title)}"\nauthor: "${escapeYaml(metadata.author)}"\ndate: "${escapeYaml(metadata.date)}"\n`;
+
+        if (formatOptions.length > 0) {
+            yaml += `format:\n  ${metadata.format}:\n${formatOptions.join('\n')}\n`;
+        } else {
+            yaml += `format: ${metadata.format}\n`;
         }
 
         yaml += `---\n`;
